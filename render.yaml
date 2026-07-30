@@ -1,0 +1,6 @@
+services:
+- type: web
+  name: cancer-risk-intelligence
+  env: python
+  buildCommand: pip install -r requirements.txt
+  startCommand: gunicorn cancer_ai.wsgi:application

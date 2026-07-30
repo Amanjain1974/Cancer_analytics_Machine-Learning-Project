@@ -1,0 +1,1 @@
+Copy the templates and static folders into your Django project. Include Chart.js via CDN as shown in the template.

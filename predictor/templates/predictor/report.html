@@ -1,0 +1,10 @@
+{% extends 'predictor/base.html' %}
+{% block content %}
+<h2>Prediction Report</h2>
+<p><strong>Patient:</strong> {{ prediction.patient_name }}</p>
+<p><strong>Result:</strong> {{ prediction.prediction }}</p>
+<p><strong>Probability:</strong> {{ prediction.probability }}</p>
+<p><strong>Confidence:</strong> {{ prediction.confidence }}%</p>
+<a class="btn btn-primary" href="#">Download PDF</a>
+<a class="btn btn-success" href="#">Export CSV</a>
+{% endblock %}
