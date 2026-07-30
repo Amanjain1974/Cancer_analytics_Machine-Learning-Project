@@ -1,0 +1,6 @@
+{% extends 'predictor/base.html' %}
+{% block content %}
+<h2>Dashboard</h2>
+<p>Total Predictions: {{ total_predictions }}</p>
+<ul>{% for p in recent_predictions %}<li>{{ p.patient_name }} - {{ p.prediction }}</li>{% empty %}<li>No predictions yet.</li>{% endfor %}</ul>
+{% endblock %}

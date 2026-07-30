@@ -1,0 +1,12 @@
+{% extends 'predictor/base.html' %}
+{% block content %}
+<h2>Prediction History</h2>
+<table class="table">
+<tr><th>Patient</th><th>Result</th><th>Date</th></tr>
+{% for p in predictions %}
+<tr><td>{{ p.patient_name }}</td><td>{{ p.prediction }}</td><td>{{ p.created_at }}</td></tr>
+{% empty %}
+<tr><td colspan="3">No records.</td></tr>
+{% endfor %}
+</table>
+{% endblock %}

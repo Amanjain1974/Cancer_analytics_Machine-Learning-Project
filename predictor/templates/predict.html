@@ -1,0 +1,8 @@
+{% extends 'predictor/base.html' %}
+{% block content %}
+<h2>Prediction Form</h2>
+<form method="post">{% csrf_token %}
+{{ form.as_p }}
+<button class="btn btn-success">Predict</button>
+</form>
+{% endblock %}
