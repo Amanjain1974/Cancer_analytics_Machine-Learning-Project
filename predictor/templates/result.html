@@ -1,7 +1,13 @@
-{% extends 'predictor/base.html' %}
+{% extends "base.html" %}
+
 {% block content %}
 <h2>Prediction Result</h2>
+
 <p><strong>Prediction:</strong> {{ prediction }}</p>
 <p><strong>Probability:</strong> {{ probability }}</p>
 <p><strong>Confidence:</strong> {{ confidence }}%</p>
+
+<a href="/predict/" class="btn btn-primary">Predict Again</a>
+<a href="/dashboard/" class="btn btn-secondary">Dashboard</a>
+
 {% endblock %}

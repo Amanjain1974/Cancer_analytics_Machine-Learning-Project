@@ -1,9 +1,32 @@
-{% extends 'predictor/base.html' %}
+{% extends "base.html" %}
+
 {% block title %}Home{% endblock %}
+
 {% block content %}
-<div class="text-center">
-<h1>Welcome</h1>
-<p>AI-powered Cancer Risk Prediction</p>
-<a href="/predict/" class="btn btn-primary">Start Prediction</a>
+<div class="container mt-5 text-center">
+
+    <h1 class="display-4">Cancer Risk Intelligence System</h1>
+
+    <p class="lead mt-3">
+        AI-powered Cancer Risk Prediction and Analytics Platform
+    </p>
+
+    <hr class="my-4">
+
+    <p>
+        Predict cancer risk using machine learning models and maintain
+        your prediction history securely.
+    </p>
+
+    <div class="mt-4">
+        <a href="/predict/" class="btn btn-primary btn-lg">
+            Start Prediction
+        </a>
+
+        <a href="/accounts/login/" class="btn btn-outline-secondary btn-lg ms-2">
+            Login
+        </a>
+    </div>
+
 </div>
 {% endblock %}

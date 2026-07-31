@@ -9,6 +9,11 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+
+    # Django Authentication
+    path("accounts/", include("django.contrib.auth.urls")),
+
+    # Predictor App
     path("", include("predictor.urls")),
 ]
 

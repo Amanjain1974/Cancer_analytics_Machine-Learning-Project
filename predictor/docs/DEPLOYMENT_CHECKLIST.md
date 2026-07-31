@@ -1,0 +1,5 @@
+- Dataset added
+- Model trained
+- Environment variables configured
+- Static files collected
+- Deployment verified

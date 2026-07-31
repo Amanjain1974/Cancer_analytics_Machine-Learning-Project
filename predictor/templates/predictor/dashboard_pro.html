@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-3">
+    <div class="list-group">
+      <a class="list-group-item active">Dashboard</a>
+      <a class="list-group-item" href="/predict/">Predict</a>
+      <a class="list-group-item" href="/history/">History</a>
+      <a class="list-group-item" href="/analytics/">Analytics</a>
+    </div>
+  </div>
+  <div class="col-md-9">
+    <div class="row g-3">
+      <div class="col-md-4"><div class="card stat-card"><div class="card-body"><h5>Total</h5><h2>{{ total_predictions }}</h2></div></div></div>
+      <div class="col-md-4"><div class="card stat-card"><div class="card-body"><h5>Positive</h5><h2>{{ positive }}</h2></div></div></div>
+      <div class="col-md-4"><div class="card stat-card"><div class="card-body"><h5>Negative</h5><h2>{{ negative }}</h2></div></div></div>
+    </div>
+    <div class="card mt-4">
+      <div class="card-header">Recent Predictions</div>
+      <div class="card-body">
+        <table class="table">
+          <tr><th>Patient</th><th>Result</th></tr>
+          {% for p in recent_predictions %}
+          <tr><td>{{ p.patient_name }}</td><td>{{ p.prediction }}</td></tr>
+          {% empty %}
+          <tr><td colspan="2">No data</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

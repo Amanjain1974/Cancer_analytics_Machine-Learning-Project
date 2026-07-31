@@ -1,8 +1,24 @@
-{% extends 'predictor/base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Cancer Prediction{% endblock %}
+
 {% block content %}
-<h2>Prediction Form</h2>
-<form method="post">{% csrf_token %}
-{{ form.as_p }}
-<button class="btn btn-success">Predict</button>
-</form>
+
+<div class="container mt-5">
+
+    <h2 class="mb-4">Cancer Risk Prediction</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit" class="btn btn-primary">
+            Predict
+        </button>
+
+    </form>
+
+</div>
+
 {% endblock %}

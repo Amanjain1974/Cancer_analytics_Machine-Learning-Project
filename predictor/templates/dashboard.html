@@ -1,6 +1,59 @@
-{% extends 'predictor/base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
 {% block content %}
-<h2>Dashboard</h2>
-<p>Total Predictions: {{ total_predictions }}</p>
-<ul>{% for p in recent_predictions %}<li>{{ p.patient_name }} - {{ p.prediction }}</li>{% empty %}<li>No predictions yet.</li>{% endfor %}</ul>
+
+<div class="container mt-5">
+
+    <h2>Dashboard</h2>
+
+    <div class="card mt-4">
+        <div class="card-body">
+
+            <h5>Total Predictions</h5>
+
+            <h2>{{ total_predictions }}</h2>
+
+        </div>
+    </div>
+
+    <div class="mt-4">
+
+        <h4>Recent Predictions</h4>
+
+        <table class="table table-bordered">
+
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Prediction</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+            {% for p in recent_predictions %}
+
+                <tr>
+                    <td>{{ p.patient_name }}</td>
+                    <td>{{ p.prediction }}</td>
+                </tr>
+
+            {% empty %}
+
+                <tr>
+                    <td colspan="2">No predictions yet.</td>
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
 {% endblock %}

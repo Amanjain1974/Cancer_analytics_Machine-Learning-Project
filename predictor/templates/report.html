@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction Report{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+    <h2 class="mb-4">Prediction Report</h2>
+
+    <div class="card shadow">
+        <div class="card-body">
+
+            <table class="table table-bordered">
+
+                <tr>
+                    <th>Prediction</th>
+                    <td>{{ prediction }}</td>
+                </tr>
+
+                <tr>
+                    <th>Probability</th>
+                    <td>{{ probability }}</td>
+                </tr>
+
+                <tr>
+                    <th>Confidence</th>
+                    <td>{{ confidence }}%</td>
+                </tr>
+
+                <tr>
+                    <th>Recommendation</th>
+                    <td>{{ recommendation }}</td>
+                </tr>
+
+            </table>
+
+            <a href="/dashboard/" class="btn btn-primary">
+                Dashboard
+            </a>
+
+            <a href="/predict/" class="btn btn-success">
+                New Prediction
+            </a>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
