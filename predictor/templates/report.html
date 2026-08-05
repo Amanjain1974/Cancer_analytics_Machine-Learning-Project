@@ -1,51 +1,165 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Prediction Report{% endblock %}
+{% block title %}Medical Report #{{ record.pk }} - Cancer Risk Intelligence System{% endblock %}
 
 {% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
 
-<div class="container mt-5">
-
-    <h2 class="mb-4">Prediction Report</h2>
-
-    <div class="card shadow">
-        <div class="card-body">
-
-            <table class="table table-bordered">
-
-                <tr>
-                    <th>Prediction</th>
-                    <td>{{ prediction }}</td>
-                </tr>
-
-                <tr>
-                    <th>Probability</th>
-                    <td>{{ probability }}</td>
-                </tr>
-
-                <tr>
-                    <th>Confidence</th>
-                    <td>{{ confidence }}%</td>
-                </tr>
-
-                <tr>
-                    <th>Recommendation</th>
-                    <td>{{ recommendation }}</td>
-                </tr>
-
-            </table>
-
-            <a href="/dashboard/" class="btn btn-primary">
-                Dashboard
+        <!-- Action Bar (No Print) -->
+        <div class="d-flex justify-content-between align-items-center mb-4 btn-no-print">
+            <a href="{% url 'history' %}" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="fas fa-arrow-left me-1"></i> Back to History
             </a>
+            <div class="d-flex gap-2">
+                <button onclick="window.print()" class="btn btn-medical-primary rounded-pill px-4 shadow">
+                    <i class="fas fa-print me-2"></i> Print / Download PDF
+                </button>
+            </div>
+        </div>
 
-            <a href="/predict/" class="btn btn-success">
-                New Prediction
-            </a>
+        <!-- PDF Document Container -->
+        <div class="glass-card p-5 shadow-lg border-0 bg-white text-dark mb-5" id="pdfReportDocument" style="background:#ffffff !important; color:#0f172a !important;">
+            
+            <!-- Hospital Header & Logo -->
+            <div class="d-flex justify-content-between align-items-center border-bottom border-2 pb-4 mb-4">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i class="fas fa-hospital-user text-primary fs-2"></i>
+                        <h3 class="fw-extrabold text-primary mb-0">Cancer Risk Intelligence System</h3>
+                    </div>
+                    <p class="text-muted fs-7 mb-0">AI Oncology Clinical Diagnostic Report</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-primary fs-7 mb-1">OFFICIAL CLINICAL REPORT</span>
+                    <div class="fs-8 text-muted">Report ID: #CRIS-{{ record.pk }}-{{ record.created_at|date:"Ymd" }}</div>
+                    <div class="fs-8 text-muted">Date: {{ record.created_at|date:"F d, Y H:i" }}</div>
+                </div>
+            </div>
+
+            <!-- Patient Information Block -->
+            <div class="bg-light p-4 rounded-3 mb-4 border">
+                <h5 class="fw-bold mb-3 text-primary border-bottom pb-2"><i class="fas fa-user-doctor me-2"></i> Patient Information</h5>
+                <div class="row g-3 fs-7">
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">Patient Name:</span>
+                        <strong class="fs-6 text-dark">{{ record.patient_name }}</strong>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">Age / Gender:</span>
+                        <strong class="fs-6 text-dark">{{ record.age }} Years / {{ record.gender }}</strong>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">Race / Ethnicity:</span>
+                        <strong class="fs-6 text-dark">{{ record.race_ethnicity }}</strong>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">BMI (Body Mass Index):</span>
+                        <strong class="fs-6 text-dark">{{ record.bmi }}</strong>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">Smoking Status:</span>
+                        <strong class="fs-6 text-dark">{{ record.smoking_status }}</strong>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <span class="text-muted d-block">Family Cancer History:</span>
+                        <strong class="fs-6 text-dark">{{ record.family_history }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Assessment Result Block -->
+            <div class="p-4 rounded-3 mb-4 border border-2 {% if record.prediction|lower == 'yes' %}border-danger bg-danger-subtle bg-opacity-10{% else %}border-success bg-success-subtle bg-opacity-10{% endif %}">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <span class="fs-8 text-uppercase fw-bold text-muted">Diagnostic Classification</span>
+                        <h2 class="fw-extrabold mb-1 {% if record.prediction|lower == 'yes' %}text-danger{% else %}text-success{% endif %}">
+                            {% if record.prediction|lower == 'yes' %}HIGH CANCER RISK DETECTED{% else %}LOW CANCER RISK / NORMAL{% endif %}
+                        </h2>
+                        <p class="text-muted fs-7 mb-0">Model Outcome: <strong>{{ record.prediction }}</strong></p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <div class="p-3 bg-white rounded-3 border text-center">
+                            <div class="display-6 fw-extrabold text-dark mb-0">{{ record.confidence|floatformat:1 }}%</div>
+                            <div class="fs-8 text-muted fw-bold text-uppercase">Confidence Score</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clinical Metrics Table -->
+            <div class="mb-4">
+                <h5 class="fw-bold mb-3 text-primary border-bottom pb-2"><i class="fas fa-notes-medical me-2"></i> Clinical Parameters Evaluated</h5>
+                <table class="table table-bordered align-middle fs-7">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Submitted Value</th>
+                            <th>Parameter</th>
+                            <th>Submitted Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="fw-semibold">Cancer Type</td>
+                            <td>{{ record.cancer_type }}</td>
+                            <td class="fw-semibold">Stage</td>
+                            <td>{{ record.stage }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Tumor Size</td>
+                            <td>{{ record.tumor_size }} cm</td>
+                            <td class="fw-semibold">Genetic Marker</td>
+                            <td>{{ record.genetic_marker }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Treatment Type</td>
+                            <td>{{ record.treatment_type }}</td>
+                            <td class="fw-semibold">Treatment Response</td>
+                            <td>{{ record.treatment_response }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Survival Months</td>
+                            <td>{{ record.survival_months }} months</td>
+                            <td class="fw-semibold">Hospital Region</td>
+                            <td>{{ record.hospital_region }} Region</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Model Probability</td>
+                            <td>{{ record.probability|floatformat:4 }}</td>
+                            <td class="fw-semibold">Confidence Rating</td>
+                            <td>{{ record.confidence|floatformat:1 }}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Medical Recommendation Block -->
+            <div class="p-4 rounded-3 border bg-light mb-4">
+                <h5 class="fw-bold mb-2 text-dark"><i class="fas fa-stethoscope text-primary me-2"></i> Oncological Recommendation</h5>
+                <p class="fs-6 text-dark mb-0 leading-relaxed">
+                    {{ record.recommendation }}
+                </p>
+            </div>
+
+            <!-- Footer Stamp & Verification -->
+            <div class="d-flex justify-content-between align-items-end pt-4 border-top">
+                <div>
+                    <div class="fw-bold text-dark fs-7">Cancer Risk Intelligence System (CRIS) AI Pipeline v2.4</div>
+                    <div class="text-muted fs-8">Generated under secure user session for {{ user.username }}.</div>
+                    <div class="text-muted fs-8">Disclaimer: This report is generated by a Machine Learning model for clinical decision support.</div>
+                </div>
+                <div class="text-end">
+                    <div class="p-2 border rounded bg-light d-inline-block text-center" style="width: 100px; height: 100px;">
+                        <i class="fas fa-qrcode fs-1 text-secondary mt-2"></i>
+                        <div class="fs-8 text-muted">VERIFIED</div>
+                    </div>
+                </div>
+            </div>
 
         </div>
+
     </div>
-
 </div>
-
 {% endblock %}

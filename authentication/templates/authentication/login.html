@@ -1,1 +1,74 @@
-<h2>Login</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button>Login</button></form>
+{% extends "base.html" %}
+
+{% block title %}Login - Cancer Risk Intelligence System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="glass-card p-4 p-md-5 shadow-lg border-0">
+            <div class="text-center mb-4">
+                <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:60px; height:60px;">
+                    <i class="fas fa-user-lock fs-3"></i>
+                </div>
+                <h3 class="fw-extrabold">Welcome Back</h3>
+                <p class="text-muted fs-7">Access your medical AI dashboard & prediction logs</p>
+            </div>
+
+            {% if form.errors %}
+            <div class="alert alert-danger d-flex align-items-center gap-2 rounded-3 mb-4 fs-7" role="alert">
+                <i class="fas fa-circle-exclamation fs-5"></i>
+                <div>Invalid username or password. Please try again.</div>
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold fs-7 text-muted">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user text-primary"></i></span>
+                        <input type="text" name="username" class="form-control" placeholder="Enter your username" required autofocus>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold fs-7 text-muted">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-lock text-primary"></i></span>
+                        <input type="password" name="password" id="loginPasswordInput2" class="form-control" placeholder="Enter your password" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('loginPasswordInput2', this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-medical-primary w-100 py-3 fw-bold mb-3 shadow">
+                    <i class="fas fa-right-to-bracket me-2"></i> Sign In to Account
+                </button>
+            </form>
+
+            <div class="text-center mt-3 pt-3 border-top">
+                <p class="text-muted fs-7 mb-0">
+                    Don't have an account? 
+                    <a href="{% url 'register' %}" class="text-primary fw-bold text-decoration-none">Register Here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+</script>
+{% endblock %}

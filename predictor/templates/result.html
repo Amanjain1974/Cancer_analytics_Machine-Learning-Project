@@ -1,13 +1,176 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Prediction Result - Cancer Risk Intelligence System{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="fas fa-house me-1"></i> Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'predict' %}">Predict</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Diagnostic Result</li>
+    </ol>
+</nav>
+{% endblock %}
 
 {% block content %}
-<h2>Prediction Result</h2>
+<div class="row justify-content-center">
+    <div class="col-lg-10">
 
-<p><strong>Prediction:</strong> {{ prediction }}</p>
-<p><strong>Probability:</strong> {{ probability }}</p>
-<p><strong>Confidence:</strong> {{ confidence }}%</p>
+        <!-- Main Risk Banner Card -->
+        <div class="glass-card p-4 p-md-5 shadow-lg border-0 mb-4 position-relative overflow-hidden">
+            <div class="row align-items-center g-4">
+                
+                <div class="col-md-7">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="fs-7 fw-bold text-uppercase tracking-wider text-muted">AI Risk Assessment Result</span>
+                        {% if prediction|lower == 'yes' %}
+                        <span class="badge badge-risk-high"><i class="fas fa-triangle-exclamation me-1"></i> HIGH RISK DETECTED</span>
+                        {% else %}
+                        <span class="badge badge-risk-low"><i class="fas fa-circle-check me-1"></i> LOW RISK / ROUTINE</span>
+                        {% endif %}
+                    </div>
 
-<a href="/predict/" class="btn btn-primary">Predict Again</a>
-<a href="/dashboard/" class="btn btn-secondary">Dashboard</a>
+                    <h1 class="display-5 fw-extrabold mb-2">
+                        {% if prediction|lower == 'yes' %}
+                        <span class="text-danger">Positive Risk Classification</span>
+                        {% else %}
+                        <span class="text-success">Negative Risk Classification</span>
+                        {% endif %}
+                    </h1>
 
+                    <p class="lead text-muted mb-4">
+                        Evaluated by Ensemble Scikit-Learn Model based on submitted clinical feature parameters.
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'predict' %}" class="btn btn-medical-primary px-4 py-2 rounded-pill fw-bold shadow">
+                            <i class="fas fa-rotate-right me-2"></i> Predict Again
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-bold">
+                            <i class="fas fa-chart-line me-2"></i> Dashboard
+                        </a>
+                        {% if record %}
+                        <a href="{% url 'report' record.pk %}" class="btn btn-outline-primary px-4 py-2 rounded-pill fw-bold" target="_blank">
+                            <i class="fas fa-file-pdf me-2"></i> Download PDF Report
+                        </a>
+                        {% endif %}
+                        <button onclick="window.print()" class="btn btn-outline-dark px-4 py-2 rounded-pill fw-bold btn-no-print">
+                            <i class="fas fa-print me-2"></i> Print Result
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-md-5 text-center">
+                    <!-- Circular SVG Gauge -->
+                    <div class="position-relative d-inline-block">
+                        <svg width="200" height="200" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="50" fill="none" stroke="var(--card-border)" stroke-width="10"/>
+                            <circle cx="60" cy="60" r="50" fill="none" 
+                                    stroke="{% if prediction|lower == 'yes' %}#f43f5e{% else %}#10b981{% endif %}" 
+                                    stroke-width="10" 
+                                    stroke-dasharray="314" 
+                                    stroke-dashoffset="{{ 314|add:'-314' }}"
+                                    style="stroke-dashoffset: calc(314 - (314 * {{ confidence|default:0 }}) / 100); transition: stroke-dashoffset 1.5s ease; transform: rotate(-90deg); transform-origin: 50% 50%;"
+                                    stroke-linecap="round"/>
+                        </svg>
+                        <div class="position-absolute top-50 start-50 translate-middle text-center">
+                            <div class="display-6 fw-extrabold mb-0">{{ confidence|floatformat:1 }}%</div>
+                            <div class="fs-8 text-muted fw-bold text-uppercase">Confidence</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Metrics Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="glass-card p-4 text-center h-100 hover-lift">
+                    <i class="fas fa-bullseye fs-2 text-primary mb-2"></i>
+                    <h6 class="text-muted fw-semibold mb-1">Prediction Output</h6>
+                    <h3 class="fw-extrabold mb-0 {% if prediction|lower == 'yes' %}text-danger{% else %}text-success{% endif %}">
+                        {{ prediction }}
+                    </h3>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="glass-card p-4 text-center h-100 hover-lift">
+                    <i class="fas fa-percent fs-2 text-teal mb-2" style="color:#0d9488;"></i>
+                    <h6 class="text-muted fw-semibold mb-1">Probability Score</h6>
+                    <h3 class="fw-extrabold text-dark mb-0">{{ probability|floatformat:4 }}</h3>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="glass-card p-4 text-center h-100 hover-lift">
+                    <i class="fas fa-shield-cat fs-2 text-warning mb-2"></i>
+                    <h6 class="text-muted fw-semibold mb-1">Model Confidence</h6>
+                    <h3 class="fw-extrabold text-dark mb-0">{{ confidence|floatformat:1 }}%</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Medical Recommendation Card -->
+        <div class="glass-card p-4 mb-4 border-start border-4 {% if prediction|lower == 'yes' %}border-danger{% else %}border-success{% endif %}">
+            <h4 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="fas fa-user-nurse {% if prediction|lower == 'yes' %}text-danger{% else %}text-success{% endif %}"></i>
+                Clinical Recommendation & Guidance
+            </h4>
+            <p class="fs-6 text-dark mb-0 leading-relaxed">
+                {{ recommendation }}
+            </p>
+        </div>
+
+        <!-- Patient Summary Parameters Grid -->
+        {% if record %}
+        <div class="glass-card p-4">
+            <h5 class="fw-bold mb-4 border-bottom pb-2"><i class="fas fa-id-card text-primary me-2"></i> Evaluated Patient Profile</h5>
+            
+            <div class="row g-3 fs-7">
+                <div class="col-sm-6 col-md-4">
+                    <span class="text-muted d-block">Patient Name:</span>
+                    <strong class="text-dark">{{ record.patient_name }}</strong>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <span class="text-muted d-block">Age / Gender:</span>
+                    <strong class="text-dark">{{ record.age }} yrs / {{ record.gender }}</strong>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <span class="text-muted d-block">Race / Ethnicity:</span>
+                    <strong class="text-dark">{{ record.race_ethnicity }}</strong>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <span class="text-muted d-block">BMI Metric:</span>
+                    <strong class="text-dark">{{ record.bmi }}</strong>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <span class="text-muted d-block">Cancer Type / Stage:</span>
+                    <strong class="text-dark">{{ record.cancer_type }} ({{ record.stage }})</strong>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <span class="text-muted d-block">Tumor Size / Genetic Marker:</span>
+                    <strong class="text-dark">{{ record.tumor_size }} cm / {{ record.genetic_marker }}</strong>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <span class="text-muted d-block">Treatment Type & Response:</span>
+                    <strong class="text-dark">{{ record.treatment_type }} ({{ record.treatment_response }})</strong>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <span class="text-muted d-block">Hospital Region:</span>
+                    <strong class="text-dark">{{ record.hospital_region }} Region</strong>
+                </div>
+                <div class="col-sm-6 col-md-4">
+                    <span class="text-muted d-block">Assessment Date:</span>
+                    <strong class="text-dark">{{ record.created_at|date:"M d, Y H:i" }}</strong>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
 {% endblock %}

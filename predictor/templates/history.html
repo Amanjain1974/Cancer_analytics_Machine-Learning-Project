@@ -1,12 +1,165 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Prediction History - Cancer Risk Intelligence System{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="fas fa-house me-1"></i> Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Prediction History</li>
+    </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<h2>Prediction History</h2>
-<table class="table">
-<tr><th>Patient</th><th>Result</th><th>Date</th></tr>
-{% for p in predictions %}
-<tr><td>{{ p.patient_name }}</td><td>{{ p.prediction }}</td><td>{{ p.created_at }}</td></tr>
-{% empty %}
-<tr><td colspan="3">No records.</td></tr>
-{% endfor %}
-</table>
+<!-- History Header Card -->
+<div class="glass-card p-4 mb-4 hero-gradient text-white border-0 shadow">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h2 class="fw-extrabold mb-1 text-white"><i class="fas fa-file-medical me-2"></i> Prediction History Logs</h2>
+            <p class="mb-0 text-white-50">Search, filter, export, and manage all your historical patient risk assessments.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="exportHistoryCSV()" class="btn btn-light rounded-pill fw-bold text-primary shadow hover-lift px-3">
+                <i class="fas fa-file-csv me-1"></i> Export CSV
+            </button>
+            <a href="{% url 'predict' %}" class="btn btn-outline-light rounded-pill fw-bold hover-lift px-3">
+                <i class="fas fa-plus me-1"></i> New Assessment
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Controls Bar: Search & Risk Filter -->
+<div class="glass-card p-3 mb-4">
+    <div class="row g-3 align-items-center">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-magnifying-glass text-primary"></i></span>
+                <input type="text" id="historySearchInput" class="form-control" placeholder="Search patient name, cancer type, region..." onkeyup="filterHistoryTable()">
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-filter text-primary"></i></span>
+                <select id="historyRiskFilter" class="form-select" onchange="filterHistoryTable()">
+                    <option value="all">Filter by Risk: All Results</option>
+                    <option value="yes">High Risk (Yes)</option>
+                    <option value="no">Low Risk (No)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-2 text-md-end">
+            <span class="badge bg-primary-subtle text-primary border rounded-pill px-3 py-2 fw-bold" id="historyRecordCount">
+                {{ predictions|length }} Records
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- History Table Card -->
+<div class="glass-card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="historyTable">
+            <thead class="table-light">
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Risk Output</th>
+                    <th>Cancer Type</th>
+                    <th>Stage & Marker</th>
+                    <th>Region</th>
+                    <th>Confidence</th>
+                    <th>Assessment Date</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in predictions %}
+                <tr data-risk="{{ p.prediction }}">
+                    <td>
+                        <div class="fw-bold text-dark">{{ p.patient_name }}</div>
+                        <div class="fs-8 text-muted">{{ p.age }}y / {{ p.gender }} | BMI: {{ p.bmi }}</div>
+                    </td>
+                    <td>
+                        {% if p.prediction|lower == 'yes' %}
+                        <span class="badge badge-risk-high"><i class="fas fa-triangle-exclamation me-1"></i> HIGH RISK</span>
+                        {% else %}
+                        <span class="badge badge-risk-low"><i class="fas fa-circle-check me-1"></i> LOW RISK</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ p.cancer_type }}</span></td>
+                    <td class="fs-7 text-muted">
+                        <div>{{ p.stage }}</div>
+                        <div class="badge bg-secondary-subtle text-secondary fs-8">{{ p.genetic_marker }}</div>
+                    </td>
+                    <td><span class="fs-7 text-muted">{{ p.hospital_region }}</span></td>
+                    <td>
+                        <div class="fw-bold">{{ p.confidence|floatformat:1 }}%</div>
+                        <div class="progress" style="height: 5px; width: 60px;">
+                            <div class="progress-bar {% if p.prediction|lower == 'yes' %}bg-danger{% else %}bg-success{% endif %}" style="width: {{ p.confidence }}%;"></div>
+                        </div>
+                    </td>
+                    <td class="text-muted fs-7">{{ p.created_at|date:"M d, Y" }}</td>
+                    <td class="text-end">
+                        <div class="btn-group">
+                            <a href="{% url 'report' p.pk %}" class="btn btn-outline-primary btn-sm rounded-circle me-1" title="View PDF Report">
+                                <i class="fas fa-file-pdf"></i>
+                            </a>
+                            <button type="button" class="btn btn-outline-danger btn-sm rounded-circle" data-bs-toggle="modal" data-bs-target="#deleteModal{{ p.pk }}" title="Delete Record">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+
+                        <!-- Delete Confirmation Modal -->
+                        <div class="modal fade" id="deleteModal{{ p.pk }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content glass-card border-0 shadow-lg text-start">
+                                    <div class="modal-header border-bottom">
+                                        <h5 class="modal-header-title text-danger fw-bold"><i class="fas fa-triangle-exclamation me-2"></i> Confirm Record Deletion</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body py-4">
+                                        <p class="mb-2">Are you sure you want to permanently delete the prediction record for <strong>{{ p.patient_name }}</strong>?</p>
+                                        <div class="p-3 bg-light rounded-3 fs-7 text-muted">
+                                            <div>Diagnostic Date: {{ p.created_at|date:"M d, Y H:i" }}</div>
+                                            <div>Prediction: {{ p.prediction }} ({{ p.confidence }}% Confidence)</div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-top">
+                                        <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                                        <form method="post" action="{% url 'delete_prediction' p.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger rounded-pill fw-bold">
+                                                <i class="fas fa-trash me-1"></i> Permanently Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="fas fa-folder-open fs-1 mb-3 text-secondary"></i>
+                            <h6>No prediction history found.</h6>
+                            <p class="fs-7 mb-3">Predictions will automatically record here after running your first assessment.</p>
+                            <a href="{% url 'predict' %}" class="btn btn-medical-primary btn-sm rounded-pill px-4">
+                                <i class="fas fa-stethoscope me-1"></i> Start First Prediction
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

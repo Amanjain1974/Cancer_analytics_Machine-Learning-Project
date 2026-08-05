@@ -1,24 +1,305 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Cancer Prediction{% endblock %}
+{% block title %}Cancer Risk Prediction - AI Diagnostics{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="fas fa-house me-1"></i> Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Start Prediction</li>
+    </ol>
+</nav>
+{% endblock %}
 
 {% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
 
-<div class="container mt-5">
+        <!-- Header Title Card -->
+        <div class="glass-card p-4 mb-4 hero-gradient text-white border-0 shadow">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 56px; height: 56px;">
+                    <i class="fas fa-stethoscope fs-3"></i>
+                </div>
+                <div>
+                    <h2 class="fw-extrabold mb-1 text-white">Cancer Risk Prediction Assessment</h2>
+                    <p class="mb-0 text-white-50">Enter clinical parameters below for multi-variable AI diagnostics analysis.</p>
+                </div>
+            </div>
+        </div>
 
-    <h2 class="mb-4">Cancer Risk Prediction</h2>
+        <!-- Multi-step Form Container -->
+        <div class="glass-card p-4 p-md-5 shadow-lg border-0">
 
-    <form method="POST">
-        {% csrf_token %}
+            <!-- Progress Bar & Wizard Indicators -->
+            <div class="wizard-steps mb-5">
+                <div class="wizard-step active" id="step-icon-1">1</div>
+                <div class="wizard-label d-none d-sm-block">Patient Info</div>
 
-        {{ form.as_p }}
+                <div class="wizard-step" id="step-icon-2">2</div>
+                <div class="wizard-label d-none d-sm-block">Medical Profile</div>
 
-        <button type="submit" class="btn btn-primary">
-            Predict
-        </button>
+                <div class="wizard-step" id="step-icon-3">3</div>
+                <div class="wizard-label d-none d-sm-block">Treatment</div>
 
-    </form>
+                <div class="wizard-step" id="step-icon-4">4</div>
+                <div class="wizard-label d-none d-sm-block">Genetics & Region</div>
+            </div>
 
+            <div class="progress mb-4" style="height: 6px;">
+                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="wizardProgressBar" style="width: 0%;"></div>
+            </div>
+
+            {% if form.errors %}
+            <div class="alert alert-danger rounded-3 mb-4 fs-7" role="alert">
+                <div class="fw-bold"><i class="fas fa-circle-exclamation me-1"></i> Form Validation Errors:</div>
+                <ul class="mb-0 ps-3">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form method="POST" id="predictionForm">
+                {% csrf_token %}
+
+                <!-- STEP 1: Patient Information -->
+                <div class="wizard-section" id="step-section-1">
+                    <h4 class="fw-bold text-primary mb-4 pb-2 border-bottom">
+                        <i class="fas fa-user-doctor me-2"></i> Step 1: Patient Information
+                    </h4>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted">Patient Full Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-user text-primary"></i></span>
+                                <input type="text" name="patient_name" class="form-control" placeholder="e.g. Jane Doe" required value="{{ form.patient_name.value|default:'' }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted">Gender</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-venus-mars text-primary"></i></span>
+                                <select name="gender" class="form-select" required>
+                                    <option value="Female" {% if form.gender.value == 'Female' %}selected{% endif %}>Female</option>
+                                    <option value="Male" {% if form.gender.value == 'Male' %}selected{% endif %}>Male</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted d-flex justify-content-between">
+                                <span>Age (Years)</span>
+                                <span class="badge bg-primary fs-7" id="ageVal">{{ form.age.value|default:'45' }}</span>
+                            </label>
+                            <input type="range" class="form-range form-range-custom mb-2" id="ageSlider" min="1" max="120" value="{{ form.age.value|default:'45' }}">
+                            <input type="number" name="age" id="ageInput" class="form-control" min="1" max="120" required value="{{ form.age.value|default:'45' }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted">Race / Ethnicity</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-globe text-primary"></i></span>
+                                <select name="race_ethnicity" class="form-select" required>
+                                    <option value="Caucasian">Caucasian</option>
+                                    <option value="Asian">Asian</option>
+                                    <option value="Hispanic">Hispanic</option>
+                                    <option value="African American">African American</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Medical Information -->
+                <div class="wizard-section d-none" id="step-section-2">
+                    <h4 class="fw-bold text-primary mb-4 pb-2 border-bottom">
+                        <i class="fas fa-notes-medical me-2"></i> Step 2: Medical Profile & Status
+                    </h4>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted d-flex justify-content-between">
+                                <span>BMI (Body Mass Index) <span id="bmiStatusBadge" class="badge bg-success ms-2">Normal</span></span>
+                                <span class="badge bg-primary fs-7" id="bmiVal">{{ form.bmi.value|default:'24.5' }}</span>
+                            </label>
+                            <input type="range" class="form-range form-range-custom mb-2" id="bmiSlider" min="10" max="60" step="0.1" value="{{ form.bmi.value|default:'24.5' }}">
+                            <input type="number" name="bmi" id="bmiInput" class="form-control" step="0.1" min="10" max="60" required value="{{ form.bmi.value|default:'24.5' }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted">Smoking Status</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-smoking text-primary"></i></span>
+                                <select name="smoking_status" class="form-select" required>
+                                    <option value="Never">Never</option>
+                                    <option value="Former">Former</option>
+                                    <option value="Current">Current</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted">Family Cancer History</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-users-rays text-primary"></i></span>
+                                <select name="family_history" class="form-select" required>
+                                    <option value="No">No</option>
+                                    <option value="Yes">Yes</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted">Primary Cancer Type</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-disease text-primary"></i></span>
+                                <select name="cancer_type" class="form-select" required>
+                                    <option value="Breast">Breast</option>
+                                    <option value="Colon">Colon</option>
+                                    <option value="Lung">Lung</option>
+                                    <option value="Prostate">Prostate</option>
+                                    <option value="Skin">Skin</option>
+                                    <option value="Leukemia">Leukemia</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted">Cancer Stage</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-layer-group text-primary"></i></span>
+                                <select name="stage" class="form-select" required>
+                                    <option value="Stage I">Stage I</option>
+                                    <option value="Stage II">Stage II</option>
+                                    <option value="Stage III">Stage III</option>
+                                    <option value="Stage IV">Stage IV</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Treatment Information -->
+                <div class="wizard-section d-none" id="step-section-3">
+                    <h4 class="fw-bold text-primary mb-4 pb-2 border-bottom">
+                        <i class="fas fa-capsules me-2"></i> Step 3: Treatment Information
+                    </h4>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted d-flex justify-content-between">
+                                <span>Tumor Size (cm)</span>
+                                <span class="badge bg-primary fs-7" id="tumorVal">{{ form.tumor_size.value|default:'3.5' }}</span>
+                            </label>
+                            <input type="range" class="form-range form-range-custom mb-2" id="tumorSlider" min="0" max="20" step="0.1" value="{{ form.tumor_size.value|default:'3.5' }}">
+                            <input type="number" name="tumor_size" id="tumorInput" class="form-control" step="0.1" min="0" required value="{{ form.tumor_size.value|default:'3.5' }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted">Treatment Type</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-syringe text-primary"></i></span>
+                                <select name="treatment_type" class="form-select" required>
+                                    <option value="Chemotherapy">Chemotherapy</option>
+                                    <option value="Radiation">Radiation</option>
+                                    <option value="Surgery">Surgery</option>
+                                    <option value="Combination Therapy">Combination Therapy</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted">Treatment Response</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-square-poll-vertical text-primary"></i></span>
+                                <select name="treatment_response" class="form-select" required>
+                                    <option value="Complete Remission">Complete Remission</option>
+                                    <option value="Partial Remission">Partial Remission</option>
+                                    <option value="No Response">No Response</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted d-flex justify-content-between">
+                                <span>Survival Months</span>
+                                <span class="badge bg-primary fs-7" id="survivalVal">{{ form.survival_months.value|default:'36' }}</span>
+                            </label>
+                            <input type="range" class="form-range form-range-custom mb-2" id="survivalSlider" min="0" max="300" value="{{ form.survival_months.value|default:'36' }}">
+                            <input type="number" name="survival_months" id="survivalInput" class="form-control" min="0" max="300" required value="{{ form.survival_months.value|default:'36' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 4: Genetics & Location -->
+                <div class="wizard-section d-none" id="step-section-4">
+                    <h4 class="fw-bold text-primary mb-4 pb-2 border-bottom">
+                        <i class="fas fa-dna me-2"></i> Step 4: Genetics & Location
+                    </h4>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted">Genetic Marker</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-dna text-primary"></i></span>
+                                <select name="genetic_marker" class="form-select" required>
+                                    <option value="BRCA1">BRCA1</option>
+                                    <option value="KRAS">KRAS</option>
+                                    <option value="EGFR">EGFR</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted">Hospital Region</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-hospital text-primary"></i></span>
+                                <select name="hospital_region" class="form-select" required>
+                                    <option value="North">North</option>
+                                    <option value="South">South</option>
+                                    <option value="East">East</option>
+                                    <option value="West">West</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wizard Navigation Buttons -->
+                <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2 fw-bold" id="wizardPrevBtn" onclick="navigateStep(-1)">
+                        <i class="fas fa-arrow-left me-2"></i> Previous
+                    </button>
+
+                    <div class="ms-auto d-flex gap-2">
+                        <button type="button" class="btn btn-medical-primary px-4 py-2 fw-bold" id="wizardNextBtn" onclick="navigateStep(1)">
+                            Next Step <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                        <button type="submit" class="btn btn-success btn-lg px-5 py-2 fw-bold shadow" id="wizardSubmitBtn" style="display: none;">
+                            <i class="fas fa-wand-magic-sparkles me-2"></i> Analyze & Predict Risk
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
 </div>
 
+<!-- AI Scanner Loading Overlay Modal -->
+<div class="scanner-overlay d-none" id="scannerOverlay">
+    <div class="scanner-wave mb-4"></div>
+    <h3 class="fw-extrabold text-white mb-2">AI Diagnostics Engine Analyzing...</h3>
+    <p class="text-white-50 mb-0">Running Scikit-learn Pipeline on submitted patient feature vector.</p>
+</div>
 {% endblock %}

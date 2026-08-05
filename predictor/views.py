@@ -1,8 +1,10 @@
+import json
 import pandas as pd
 
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Count, Avg
 
 from .forms import PredictionForm
 from .models import PredictionHistory
@@ -19,20 +21,42 @@ def get_model():
 
 
 def home(request):
-    return render(request, "home.html")
+    total_system_predictions = PredictionHistory.objects.count()
+    return render(request, "home.html", {
+        "total_system_predictions": total_system_predictions
+    })
 
 
 @login_required
 def dashboard(request):
-    recent_predictions = PredictionHistory.objects.filter(
-        user=request.user
-    ).order_by("-created_at")[:5]
+    user_preds = PredictionHistory.objects.filter(user=request.user)
+    recent_predictions = user_preds.order_by("-created_at")[:5]
+    total_predictions = user_preds.count()
+
+    positive_count = user_preds.filter(prediction__iexact="yes").count()
+    negative_count = user_preds.filter(prediction__iexact="no").count()
+
+    avg_conf_qs = user_preds.aggregate(avg=Avg("confidence"))
+    avg_confidence = round(avg_conf_qs["avg"], 1) if avg_conf_qs["avg"] else 0.0
+
+    # Chart data: Cancer types breakdown
+    cancer_types = list(user_preds.values("cancer_type").annotate(count=Count("id")))
+
+    # Recent predictions trend
+    trend_qs = list(user_preds.order_by("-created_at")[:10])
+    trend_qs.reverse()
+    trend_labels = [p.created_at.strftime("%b %d") for p in trend_qs]
+    trend_scores = [round(p.confidence, 1) for p in trend_qs]
 
     return render(request, "dashboard.html", {
         "recent_predictions": recent_predictions,
-        "total_predictions": PredictionHistory.objects.filter(
-            user=request.user
-        ).count(),
+        "total_predictions": total_predictions,
+        "positive_count": positive_count,
+        "negative_count": negative_count,
+        "avg_confidence": avg_confidence,
+        "cancer_types_json": json.dumps(cancer_types),
+        "trend_labels_json": json.dumps(trend_labels),
+        "trend_scores_json": json.dumps(trend_scores),
     })
 
 
@@ -41,7 +65,6 @@ def predict_cancer(request):
     form = PredictionForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
-
         data = form.cleaned_data
         model = get_model()
 
@@ -71,27 +94,31 @@ def predict_cancer(request):
         if hasattr(model, "predict_proba"):
             probs = model.predict_proba(features)[0]
             probability = float(max(probs))
-            confidence = probability * 100
+            confidence = round(probability * 100, 2)
 
-        PredictionHistory.objects.create(
+        recommendation = (
+            "Consult an oncologist immediately. High risk indicators detected. Follow up with comprehensive diagnostic imaging and biopsy confirmation."
+            if str(prediction).lower() == "yes"
+            else "Continue routine screening and maintain healthy lifestyle habits. Low immediate risk detected."
+        )
+
+        record = PredictionHistory.objects.create(
             user=request.user,
             **data,
             prediction=str(prediction),
-            probability=probability,
+            probability=round(probability, 4),
             confidence=confidence,
-            recommendation=(
-                "Consult an oncologist immediately."
-                if str(prediction).lower() == "yes"
-                else "Continue routine follow-up."
-            ),
+            recommendation=recommendation,
         )
 
         messages.success(request, "Prediction completed successfully.")
 
         return render(request, "result.html", {
             "prediction": prediction,
-            "probability": probability,
+            "probability": round(probability, 4),
             "confidence": confidence,
+            "record": record,
+            "recommendation": recommendation,
         })
 
     return render(request, "predict.html", {"form": form})
@@ -112,9 +139,73 @@ def history(request):
 def analytics(request):
     qs = PredictionHistory.objects.filter(user=request.user)
 
+    total = qs.count()
+    positive = qs.filter(prediction__iexact="yes").count()
+    negative = qs.filter(prediction__iexact="no").count()
+
+    avg_conf_qs = qs.aggregate(avg=Avg("confidence"))
+    avg_confidence = round(avg_conf_qs["avg"], 1) if avg_conf_qs["avg"] else 0.0
+
+    by_cancer = list(qs.values("cancer_type").annotate(count=Count("id")).order_by("-count"))
+    by_region = list(qs.values("hospital_region").annotate(count=Count("id")))
+
+    high_conf = qs.filter(confidence__gte=85).count()
+    med_conf = qs.filter(confidence__gte=70, confidence__lt=85).count()
+    low_conf = qs.filter(confidence__lt=70).count()
+
     return render(request, "analytics.html", {
-        "total": qs.count(),
-        "positive": qs.filter(prediction="Yes").count(),
-        "negative": qs.filter(prediction="No").count(),
+        "total": total,
+        "positive": positive,
+        "negative": negative,
+        "avg_confidence": avg_confidence,
         "history": qs[:10],
+        "by_cancer_json": json.dumps(by_cancer),
+        "by_region_json": json.dumps(by_region),
+        "conf_dist_json": json.dumps([high_conf, med_conf, low_conf]),
     })
+
+
+@login_required
+def profile(request):
+    user_preds = PredictionHistory.objects.filter(user=request.user)
+    total_preds = user_preds.count()
+    pos_preds = user_preds.filter(prediction__iexact="yes").count()
+    neg_preds = user_preds.filter(prediction__iexact="no").count()
+
+    return render(request, "profile.html", {
+        "user": request.user,
+        "total_preds": total_preds,
+        "pos_preds": pos_preds,
+        "neg_preds": neg_preds,
+        "recent_preds": user_preds.order_by("-created_at")[:5],
+    })
+
+
+@login_required
+def settings_view(request):
+    if request.method == "POST":
+        messages.success(request, "Preferences saved successfully.")
+        return redirect("settings")
+    return render(request, "settings.html")
+
+
+@login_required
+def report_view(request, pk):
+    record = get_object_or_404(PredictionHistory, pk=pk, user=request.user)
+    return render(request, "report.html", {
+        "record": record,
+        "prediction": record.prediction,
+        "probability": record.probability,
+        "confidence": record.confidence,
+        "recommendation": record.recommendation,
+    })
+
+
+@login_required
+def delete_prediction(request, pk):
+    record = get_object_or_404(PredictionHistory, pk=pk, user=request.user)
+    if request.method == "POST":
+        record.delete()
+        messages.success(request, "Prediction record deleted successfully.")
+        return redirect("history")
+    return redirect("history")

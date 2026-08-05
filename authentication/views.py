@@ -1,22 +1,47 @@
-from django.shortcuts import render,redirect
-from django.contrib.auth import login,logout,authenticate
-from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib import messages
+
 
 def register(request):
-    form=UserCreationForm(request.POST or None)
-    if request.method=="POST" and form.is_valid():
-        user=form.save()
-        login(request,user)
+    if request.user.is_authenticated:
         return redirect("dashboard")
-    return render(request,"authentication/register.html",{"form":form})
+
+    form = UserCreationForm(request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(
+                request,
+                f"Account created successfully. Welcome, {user.username}!"
+            )
+            return redirect("dashboard")
+        else:
+            messages.error(request, "Please review the errors below.")
+
+    return render(request, "authentication/register.html", {"form": form})
+
 
 def user_login(request):
-    form=AuthenticationForm(request,data=request.POST or None)
-    if request.method=="POST" and form.is_valid():
-        login(request,form.get_user())
+    if request.user.is_authenticated:
         return redirect("dashboard")
-    return render(request,"authentication/login.html",{"form":form})
+
+    form = AuthenticationForm(request, data=request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            messages.success(request, f"Welcome back, {user.username}!")
+            return redirect("dashboard")
+        else:
+            messages.error(request, "Invalid username or password.")
+
+    return render(request, "authentication/login.html", {"form": form})
+
 
 def user_logout(request):
     logout(request)
+    messages.info(request, "You have successfully logged out.")
     return redirect("home")

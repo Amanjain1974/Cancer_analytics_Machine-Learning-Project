@@ -13,6 +13,10 @@ urlpatterns = [
     # Django Authentication
     path("accounts/", include("django.contrib.auth.urls")),
 
+    # Custom Authentication routes (register, login, logout)
+    path("auth/", include("authentication.urls")),
+    path("", include("authentication.urls")),
+
     # Predictor App
     path("", include("predictor.urls")),
 ]

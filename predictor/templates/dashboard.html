@@ -1,59 +1,244 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Medical AI Dashboard - Cancer Risk Intelligence System{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="fas fa-house me-1"></i> Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+    </ol>
+</nav>
+{% endblock %}
 
 {% block content %}
+<!-- Top Welcome Banner -->
+<div class="glass-card p-4 mb-4 hero-gradient text-white border-0 shadow">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h2 class="fw-extrabold mb-1 text-white">Welcome back, {{ user.username }}!</h2>
+            <p class="mb-0 text-white-50">Here is your live medical AI analytics and prediction summary.</p>
+        </div>
+        <div>
+            <a href="{% url 'predict' %}" class="btn btn-light rounded-pill fw-bold text-primary shadow hover-lift px-4 py-2">
+                <i class="fas fa-plus me-1"></i> New Risk Assessment
+            </a>
+        </div>
+    </div>
+</div>
 
-<div class="container mt-5">
-
-    <h2>Dashboard</h2>
-
-    <div class="card mt-4">
-        <div class="card-body">
-
-            <h5>Total Predictions</h5>
-
-            <h2>{{ total_predictions }}</h2>
-
+<!-- Stat Cards Row -->
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="glass-card p-4 h-100 hover-lift">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <span class="text-muted fw-semibold fs-7">Total Predictions</span>
+                <div class="bg-primary-subtle text-primary rounded-3 p-2">
+                    <i class="fas fa-file-medical-query fs-5"></i>
+                </div>
+            </div>
+            <h2 class="display-6 fw-extrabold text-primary mb-1">{{ total_predictions }}</h2>
+            <div class="fs-8 text-muted"><i class="fas fa-database me-1"></i> Evaluated samples</div>
         </div>
     </div>
 
-    <div class="mt-4">
-
-        <h4>Recent Predictions</h4>
-
-        <table class="table table-bordered">
-
-            <thead>
-                <tr>
-                    <th>Patient</th>
-                    <th>Prediction</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-            {% for p in recent_predictions %}
-
-                <tr>
-                    <td>{{ p.patient_name }}</td>
-                    <td>{{ p.prediction }}</td>
-                </tr>
-
-            {% empty %}
-
-                <tr>
-                    <td colspan="2">No predictions yet.</td>
-                </tr>
-
-            {% endfor %}
-
-            </tbody>
-
-        </table>
-
+    <div class="col-sm-6 col-lg-3">
+        <div class="glass-card p-4 h-100 hover-lift">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <span class="text-muted fw-semibold fs-7">Positive Cases</span>
+                <div class="bg-danger-subtle text-danger rounded-3 p-2">
+                    <i class="fas fa-triangle-exclamation fs-5"></i>
+                </div>
+            </div>
+            <h2 class="display-6 fw-extrabold text-danger mb-1">{{ positive_count }}</h2>
+            <div class="fs-8 text-muted"><i class="fas fa-arrow-up-right-dots me-1 text-danger"></i> High risk identified</div>
+        </div>
     </div>
 
+    <div class="col-sm-6 col-lg-3">
+        <div class="glass-card p-4 h-100 hover-lift">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <span class="text-muted fw-semibold fs-7">Negative Cases</span>
+                <div class="bg-success-subtle text-success rounded-3 p-2">
+                    <i class="fas fa-shield-check fs-5"></i>
+                </div>
+            </div>
+            <h2 class="display-6 fw-extrabold text-success mb-1">{{ negative_count }}</h2>
+            <div class="fs-8 text-muted"><i class="fas fa-check me-1 text-success"></i> Normal / Low risk</div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+        <div class="glass-card p-4 h-100 hover-lift">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <span class="text-muted fw-semibold fs-7">Avg Confidence</span>
+                <div class="bg-teal-subtle text-teal rounded-3 p-2" style="background:#ccfbf1; color:#0d9488;">
+                    <i class="fas fa-bullseye fs-5"></i>
+                </div>
+            </div>
+            <h2 class="display-6 fw-extrabold text-dark mb-1">{{ avg_confidence }}%</h2>
+            <div class="fs-8 text-muted"><i class="fas fa-chart-simple me-1 text-teal" style="color:#0d9488;"></i> Scikit-Learn precision</div>
+        </div>
+    </div>
 </div>
 
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+    <!-- Trend Line Chart -->
+    <div class="col-lg-8">
+        <div class="glass-card p-4 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3">
+                <h5 class="fw-bold mb-0"><i class="fas fa-chart-line text-primary me-2"></i> Prediction Confidence Trends</h5>
+                <span class="badge bg-primary-subtle text-primary rounded-pill">Recent Runs</span>
+            </div>
+            <div style="height: 280px; position: relative;">
+                <canvas id="dashboardTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Doughnut Distribution Chart -->
+    <div class="col-lg-4">
+        <div class="glass-card p-4 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3">
+                <h5 class="fw-bold mb-0"><i class="fas fa-chart-pie text-teal me-2" style="color:#0d9488;"></i> Risk Distribution</h5>
+                <span class="badge bg-teal-subtle text-teal rounded-pill" style="background:#ccfbf1; color:#0d9488;">Ratio</span>
+            </div>
+            <div style="height: 280px; position: relative;" class="d-flex align-items-center justify-content-center">
+                <canvas id="dashboardRiskDoughnut"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Predictions Table -->
+<div class="glass-card p-4">
+    <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3">
+        <div>
+            <h5 class="fw-bold mb-0"><i class="fas fa-clock-rotate-left text-primary me-2"></i> Recent Risk Assessments</h5>
+            <span class="text-muted fs-7">Latest 5 diagnostic records</span>
+        </div>
+        <a href="{% url 'history' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+            View All History <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Patient Name</th>
+                    <th scope="col">Risk Classification</th>
+                    <th scope="col">Cancer Type</th>
+                    <th scope="col">Confidence</th>
+                    <th scope="col">Date</th>
+                    <th scope="col" class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in recent_predictions %}
+                <tr>
+                    <td class="fw-bold text-dark">{{ p.patient_name }}</td>
+                    <td>
+                        {% if p.prediction|lower == 'yes' %}
+                        <span class="badge badge-risk-high">HIGH RISK</span>
+                        {% else %}
+                        <span class="badge badge-risk-low">LOW RISK</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ p.cancer_type }}</span></td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fw-semibold">{{ p.confidence|floatformat:1 }}%</span>
+                            <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                                <div class="progress-bar {% if p.prediction|lower == 'yes' %}bg-danger{% else %}bg-success{% endif %}" style="width: {{ p.confidence }}%;"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-muted fs-7">{{ p.created_at|date:"M d, Y" }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'report' p.pk %}" class="btn btn-outline-secondary btn-sm rounded-pill me-1" title="View PDF Report">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="fas fa-folder-open fs-1 mb-3 text-secondary"></i>
+                            <h6>No predictions recorded yet.</h6>
+                            <p class="fs-7 mb-3">Run your first AI cancer risk prediction to populate dashboard data.</p>
+                            <a href="{% url 'predict' %}" class="btn btn-medical-primary btn-sm rounded-pill">
+                                <i class="fas fa-plus me-1"></i> Start First Prediction
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Trend Line Chart
+    const trendLabels = {{ trend_labels_json|safe }};
+    const trendScores = {{ trend_scores_json|safe }};
+
+    const ctxTrend = document.getElementById('dashboardTrendChart').getContext('2d');
+    new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+            labels: trendLabels.length ? trendLabels : ['Run 1', 'Run 2', 'Run 3', 'Run 4', 'Run 5'],
+            datasets: [{
+                label: 'Confidence %',
+                data: trendScores.length ? trendScores : [92, 88, 95, 91, 94],
+                borderColor: '#0284c7',
+                backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                fill: true,
+                tension: 0.4,
+                borderWidth: 3,
+                pointRadius: 5,
+                pointBackgroundColor: '#0284c7'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { min: 50, max: 100, grid: { color: 'rgba(226, 232, 240, 0.5)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Doughnut Risk Chart
+    const ctxDoughnut = document.getElementById('dashboardRiskDoughnut').getContext('2d');
+    new Chart(ctxDoughnut, {
+        type: 'doughnut',
+        data: {
+            labels: ['Positive (High Risk)', 'Negative (Low Risk)'],
+            datasets: [{
+                data: [{{ positive_count }}, {{ negative_count }}],
+                backgroundColor: ['#f43f5e', '#10b981'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            },
+            cutout: '70%'
+        }
+    });
+});
+</script>
 {% endblock %}

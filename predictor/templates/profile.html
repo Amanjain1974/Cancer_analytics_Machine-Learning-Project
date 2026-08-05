@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}User Profile - Cancer Risk Intelligence System{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="fas fa-house me-1"></i> Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">User Profile</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+
+        <!-- User Banner Card -->
+        <div class="glass-card p-4 p-md-5 mb-4 hero-gradient text-white border-0 shadow">
+            <div class="d-flex align-items-center gap-4">
+                <div class="bg-white text-teal rounded-circle d-flex align-items-center justify-content-center shadow fw-bold display-5" style="width: 80px; height: 80px; color:#0d9488;">
+                    {{ user.username|slice:":1"|upper }}
+                </div>
+                <div>
+                    <h2 class="fw-extrabold mb-1 text-white">{{ user.username }}</h2>
+                    <p class="mb-2 text-white-50"><i class="fas fa-envelope me-1"></i> {{ user.email|default:"clinician@cancer-ai.org" }}</p>
+                    <span class="badge bg-white text-primary rounded-pill px-3 py-1 fw-bold">Active Clinician Account</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Overview Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="glass-card p-4 text-center hover-lift">
+                    <i class="fas fa-folder-open fs-2 text-primary mb-2"></i>
+                    <h6 class="text-muted fw-semibold mb-1">Total Predictions Made</h6>
+                    <h2 class="fw-extrabold text-primary mb-0">{{ total_preds }}</h2>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="glass-card p-4 text-center hover-lift">
+                    <i class="fas fa-triangle-exclamation fs-2 text-danger mb-2"></i>
+                    <h6 class="text-muted fw-semibold mb-1">High Risk Identified</h6>
+                    <h2 class="fw-extrabold text-danger mb-0">{{ pos_preds }}</h2>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="glass-card p-4 text-center hover-lift">
+                    <i class="fas fa-circle-check fs-2 text-success mb-2"></i>
+                    <h6 class="text-muted fw-semibold mb-1">Low Risk Identified</h6>
+                    <h2 class="fw-extrabold text-success mb-0">{{ neg_preds }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity Table Card -->
+        <div class="glass-card p-4">
+            <h5 class="fw-bold mb-4 border-bottom pb-2"><i class="fas fa-clock-rotate-left text-primary me-2"></i> Recent Profile Activity</h5>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Prediction</th>
+                            <th>Cancer Type</th>
+                            <th>Date</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in recent_preds %}
+                        <tr>
+                            <td class="fw-bold text-dark">{{ p.patient_name }}</td>
+                            <td>
+                                {% if p.prediction|lower == 'yes' %}
+                                <span class="badge badge-risk-high">HIGH RISK</span>
+                                {% else %}
+                                <span class="badge badge-risk-low">LOW RISK</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ p.cancer_type }}</td>
+                            <td class="text-muted fs-7">{{ p.created_at|date:"M d, Y" }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'report' p.pk %}" class="btn btn-outline-primary btn-sm rounded-pill">
+                                    <i class="fas fa-file-pdf me-1"></i> Report
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No recent activity.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
