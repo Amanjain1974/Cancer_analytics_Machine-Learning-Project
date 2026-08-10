@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cancer Survival Prognosis Result | CRIS AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+
+        <!-- Top Header & Status -->
+        <div class="d-flex flex-column flex-md-row align-items-center justify-content-between mb-4 gap-3">
+            <div>
+                <span class="badge bg-teal-subtle text-teal border border-teal-subtle rounded-pill px-3 py-1 fw-bold fs-7 mb-1" style="background:#ccfbf1; color:#0d9488;">
+                    <i class="fas fa-stethoscope me-1"></i> Survival Prognosis Evaluation Complete
+                </span>
+                <h2 class="fw-bold text-main mb-0">Clinical Survival Report for {{ record.patient_name }}</h2>
+                <small class="text-muted"><i class="fas fa-clock me-1"></i> Assessed on {{ record.created_at|date:"d M Y, H:i" }}</small>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'report' record.pk %}" class="btn btn-outline-teal rounded-pill px-3" style="color:#0d9488; border-color:#0d9488;">
+                    <i class="fas fa-file-pdf me-1"></i> Download Report
+                </a>
+                <a href="{% url 'predict' %}" class="btn text-white rounded-pill px-4" style="background:#0d9488;">
+                    <i class="fas fa-rotate-right me-1"></i> Predict Again
+                </a>
+            </div>
+        </div>
+
+        <!-- Main KPI Summary Grid -->
+        <div class="row g-4 mb-4">
+            
+            <!-- Survival Probability Card -->
+            <div class="col-md-4">
+                <div class="card glass-card border-0 shadow-sm text-center p-4 h-100 position-relative overflow-hidden">
+                    <h6 class="text-uppercase text-muted fw-bold fs-7 mb-3">Overall Survival Probability</h6>
+                    
+                    <div class="position-relative d-inline-flex align-items-center justify-content-center my-2">
+                        <div class="fs-1 fw-extrabold {% if prognosis_category == 'Excellent' or prognosis_category == 'Good' %}text-success{% elif prognosis_category == 'Moderate' %}text-warning{% else %}text-danger{% endif %}">
+                            {{ survival_probability }}%
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        {% if prognosis_category == 'Excellent' %}
+                            <span class="badge bg-success text-white rounded-pill px-4 py-2 fs-6 fw-bold shadow-sm">
+                                <i class="fas fa-circle-check me-1"></i> EXCELLENT PROGNOSIS
+                            </span>
+                        {% elif prognosis_category == 'Good' %}
+                            <span class="badge bg-info text-white rounded-pill px-4 py-2 fs-6 fw-bold shadow-sm">
+                                <i class="fas fa-circle-check me-1"></i> GOOD PROGNOSIS
+                            </span>
+                        {% elif prognosis_category == 'Moderate' %}
+                            <span class="badge bg-warning text-dark rounded-pill px-4 py-2 fs-6 fw-bold shadow-sm">
+                                <i class="fas fa-triangle-exclamation me-1"></i> MODERATE PROGNOSIS
+                            </span>
+                        {% elif prognosis_category == 'Poor' %}
+                            <span class="badge bg-danger text-white rounded-pill px-4 py-2 fs-6 fw-bold shadow-sm">
+                                <i class="fas fa-triangle-exclamation me-1"></i> POOR PROGNOSIS
+                            </span>
+                        {% else %}
+                            <span class="badge bg-dark text-white rounded-pill px-4 py-2 fs-6 fw-bold shadow-sm">
+                                <i class="fas fa-triangle-exclamation me-1"></i> CRITICAL PROGNOSIS
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="progress mt-4" style="height: 10px;">
+                        <div class="progress-bar {% if prognosis_category == 'Excellent' or prognosis_category == 'Good' %}bg-success{% elif prognosis_category == 'Moderate' %}bg-warning{% else %}bg-danger{% endif %}"
+                             role="progressbar" style="width: {{ survival_probability }}%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estimated Survival Duration Card -->
+            <div class="col-md-4">
+                <div class="card glass-card border-0 shadow-sm text-center p-4 h-100">
+                    <h6 class="text-uppercase text-muted fw-bold fs-7 mb-3">Estimated Survival Duration</h6>
+                    
+                    <div class="fs-1 fw-extrabold text-teal my-2" style="color: #0d9488;">
+                        {{ estimated_survival_months }} <span class="fs-5 text-muted fw-normal">Months</span>
+                    </div>
+
+                    <p class="small text-muted mb-0">
+                        Prognostic survival timeline based on cancer stage, tumor size, and therapy response.
+                    </p>
+
+                    <div class="progress mt-4 bg-body-tertiary" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: {% widthratio estimated_survival_months 120 100 %}%; background-color: #0d9488;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Confidence Score Card -->
+            <div class="col-md-4">
+                <div class="card glass-card border-0 shadow-sm text-center p-4 h-100">
+                    <h6 class="text-uppercase text-muted fw-bold fs-7 mb-3">Model Confidence</h6>
+                    
+                    <div class="fs-1 fw-extrabold text-primary my-2">
+                        {{ confidence }}%
+                    </div>
+
+                    <p class="small text-muted mb-0">
+                        Calibrated prediction confidence across post-diagnosis survival classifier pipeline.
+                    </p>
+
+                    <div class="progress mt-4 bg-body-tertiary" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ confidence }}%;"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Predicted Outcome Text Summary -->
+        <div class="alert alert-info border-0 shadow-sm p-4 mb-4 rounded-4">
+            <div class="d-flex align-items-start gap-3">
+                <i class="fas fa-notes-medical fs-2 mt-1 text-info"></i>
+                <div>
+                    <h5 class="fw-bold mb-1">Predicted Clinical Outcome Summary</h5>
+                    <p class="mb-0 fs-6 opacity-90 text-dark">{{ predicted_outcome }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Positive & Adverse Survival Factors Grid -->
+        <div class="row g-4 mb-4">
+            
+            <!-- Positive Survival Drivers -->
+            <div class="col-md-6">
+                <div class="card glass-card border-0 shadow-sm h-100 p-4">
+                    <h5 class="fw-bold text-success mb-3"><i class="fas fa-circle-plus me-2"></i> Favorable Survival Factors</h5>
+                    <ul class="list-group list-group-flush">
+                        {% for pos in positive_factors %}
+                        <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2">
+                            <span class="fw-semibold text-main fs-7"><i class="fas fa-check text-success me-2"></i> {{ pos.factor }}</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">{{ pos.impact }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item bg-transparent px-0 py-2 text-muted fs-7">Standard supportive care parameters.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Adverse Survival Drivers -->
+            <div class="col-md-6">
+                <div class="card glass-card border-0 shadow-sm h-100 p-4">
+                    <h5 class="fw-bold text-danger mb-3"><i class="fas fa-circle-minus me-2"></i> Adverse Prognostic Factors</h5>
+                    <ul class="list-group list-group-flush">
+                        {% for neg in negative_factors %}
+                        <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2">
+                            <span class="fw-semibold text-main fs-7"><i class="fas fa-triangle-exclamation text-danger me-2"></i> {{ neg.factor }}</span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3">{{ neg.impact }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item bg-transparent px-0 py-2 text-muted fs-7">No high-level adverse prognostic indicators detected.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Oncology Medical Recommendations Card -->
+        <div class="card glass-card border-0 shadow-sm p-4 p-md-5 mb-5">
+            <h4 class="fw-bold text-main mb-3"><i class="fas fa-clipboard-list text-teal me-2" style="color:#0d9488;"></i> Oncology & Treatment Recommendations</h4>
+            <p class="text-muted">Evidence-based clinical guidance derived from staging, response, and biomarker profile:</p>
+
+            <div class="row g-3 mt-2">
+                {% for rec in recommendations %}
+                <div class="col-12">
+                    <div class="p-3 bg-body-tertiary rounded-3 border-start border-4 border-teal d-flex align-items-start gap-3" style="border-left-color:#0d9488 !important;">
+                        <i class="fas fa-user-md fs-5 mt-1 text-teal" style="color:#0d9488;"></i>
+                        <div>
+                            <p class="mb-0 fw-semibold text-main">{{ rec }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <p class="text-muted">Continue prescribed oncology follow-up plan.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Action Toolbar -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-5 pt-3 border-top">
+                <a href="{% url 'history' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                    <i class="fas fa-history me-1"></i> View Patient History
+                </a>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'report' record.pk %}" class="btn text-white rounded-pill px-4" style="background:#0d9488;">
+                        <i class="fas fa-file-pdf me-1"></i> Generate Printable Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

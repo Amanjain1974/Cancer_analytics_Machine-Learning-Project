@@ -1,229 +1,177 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Clinical Analytics - Cancer Risk Intelligence System{% endblock %}
-
-{% block breadcrumbs %}
-<nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="fas fa-house me-1"></i> Home</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Clinical Analytics</li>
-    </ol>
-</nav>
-{% endblock %}
+{% block title %}Analytics & Feature Insights | CRIS AI{% endblock %}
 
 {% block content %}
-<!-- Analytics Header Card -->
-<div class="glass-card p-4 mb-4 hero-gradient text-white border-0 shadow">
-    <div class="d-flex align-items-center gap-3">
-        <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 56px; height: 56px;">
-            <i class="fas fa-microscope fs-3"></i>
+<div class="mb-4">
+    <h2 class="fw-bold text-main mb-1">Epidemiological Risk Analytics</h2>
+    <p class="text-muted">Statistical distributions across patient demographics, lifestyle habits, and calibrated AI model performance metrics.</p>
+</div>
+
+<!-- Key Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card glass-card border-0 shadow-sm p-3 text-center">
+            <div class="text-muted fs-7 text-uppercase fw-bold">Total Patient Evaluated</div>
+            <div class="fs-2 fw-bold text-primary">{{ total }}</div>
         </div>
-        <div>
-            <h2 class="fw-extrabold mb-1 text-white">Dual AI Clinical Analytics</h2>
-            <p class="mb-0 text-white-50">Population health distribution, pre-diagnosis risk factors, and post-diagnosis survival metrics.</p>
+    </div>
+    <div class="col-md-3">
+        <div class="card glass-card border-0 shadow-sm p-3 text-center">
+            <div class="text-muted fs-7 text-uppercase fw-bold text-danger">High Risk Stratum</div>
+            <div class="fs-2 fw-bold text-danger">{{ high_risk }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card glass-card border-0 shadow-sm p-3 text-center">
+            <div class="text-muted fs-7 text-uppercase fw-bold text-warning">Medium Risk Stratum</div>
+            <div class="fs-2 fw-bold text-warning">{{ med_risk }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card glass-card border-0 shadow-sm p-3 text-center">
+            <div class="text-muted fs-7 text-uppercase fw-bold text-success">Low Risk Stratum</div>
+            <div class="fs-2 fw-bold text-success">{{ low_risk }}</div>
         </div>
     </div>
 </div>
 
-<!-- Summary Metric Badges -->
+<!-- Chart Grid -->
 <div class="row g-4 mb-4">
-    <div class="col-sm-6 col-lg-3">
-        <div class="glass-card p-4 text-center hover-lift">
-            <span class="text-muted fs-7 fw-bold text-uppercase d-block mb-1">Risk Assessments</span>
-            <h2 class="display-6 fw-extrabold text-teal mb-0 counter-animate" data-target="{{ total_risk_assessments }}" style="color:#0d9488;">0</h2>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-lg-3">
-        <div class="glass-card p-4 text-center hover-lift">
-            <span class="text-muted fs-7 fw-bold text-uppercase d-block mb-1">Survival Predictions</span>
-            <h2 class="display-6 fw-extrabold text-primary mb-0 counter-animate" data-target="{{ total }}">0</h2>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-lg-3">
-        <div class="glass-card p-4 text-center hover-lift">
-            <span class="text-muted fs-7 fw-bold text-uppercase d-block mb-1">High Risk Stratum</span>
-            <h2 class="display-6 fw-extrabold text-danger mb-0 counter-animate" data-target="{{ high_risk_count }}">0</h2>
-        </div>
-    </div>
-
-    <div class="col-sm-6 col-lg-3">
-        <div class="glass-card p-4 text-center hover-lift">
-            <span class="text-muted fs-7 fw-bold text-uppercase d-block mb-1">Avg Survival Confidence</span>
-            <h2 class="display-6 fw-extrabold text-dark mb-0 counter-animate" data-target="{{ avg_confidence }}">0%</h2>
-        </div>
-    </div>
-</div>
-
-<!-- Charts Grid -->
-<div class="row g-4 mb-4">
-    <!-- Module 1 Risk Distribution Chart -->
-    <div class="col-md-6 col-lg-6">
-        <div class="glass-card p-4 h-100">
-            <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-chart-pie text-teal me-2" style="color:#0d9488;"></i> Module 1: Pre-Diagnosis Risk Distribution</h5>
-            <div style="height: 280px; position: relative;" class="d-flex align-items-center justify-content-center">
-                <canvas id="riskStrataPieChart"></canvas>
+    
+    <!-- Risk Stratum Distribution -->
+    <div class="col-md-6">
+        <div class="card glass-card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-main mb-3"><i class="fas fa-pie-chart text-primary me-2"></i> Risk Stratum Breakdown</h5>
+            <div style="height: 260px;" class="d-flex justify-content-center">
+                <canvas id="riskDistChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Module 2 Survival Outcome Doughnut Chart -->
-    <div class="col-md-6 col-lg-6">
-        <div class="glass-card p-4 h-100">
-            <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-stethoscope text-primary me-2"></i> Module 2: Survival Recurrence Ratio</h5>
-            <div style="height: 280px; position: relative;" class="d-flex align-items-center justify-content-center">
-                <canvas id="survivalPieChart"></canvas>
+    <!-- Age Distribution -->
+    <div class="col-md-6">
+        <div class="card glass-card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-main mb-3"><i class="fas fa-users text-primary me-2"></i> Age Group Stratification</h5>
+            <div style="height: 260px;">
+                <canvas id="ageDistChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Cancer Type Distribution Bar Chart -->
-    <div class="col-md-6 col-lg-6">
-        <div class="glass-card p-4 h-100">
-            <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-chart-column text-primary me-2"></i> Cancer Types (Survival Module)</h5>
-            <div style="height: 280px; position: relative;">
-                <canvas id="cancerTypeBarChart"></canvas>
+    <!-- Smoking Impact on Risk -->
+    <div class="col-md-6">
+        <div class="card glass-card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-main mb-3"><i class="fas fa-smoking text-danger me-2"></i> Smoking Habit vs Avg Risk %</h5>
+            <div style="height: 260px;">
+                <canvas id="smokingRiskChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Model Confidence Distribution Bar Chart -->
-    <div class="col-md-6 col-lg-6">
-        <div class="glass-card p-4 h-100">
-            <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-sliders text-info me-2"></i> Survival Model Precision Distribution</h5>
-            <div style="height: 280px; position: relative;">
-                <canvas id="confDistBarChart"></canvas>
+    <!-- BMI Impact on Risk -->
+    <div class="col-md-6">
+        <div class="card glass-card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-main mb-3"><i class="fas fa-weight-scale text-warning me-2"></i> BMI Classification vs Avg Risk %</h5>
+            <div style="height: 260px;">
+                <canvas id="bmiRiskChart"></canvas>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Recent Timeline Activity Log -->
-<div class="glass-card p-4">
-    <h5 class="fw-bold mb-4 border-bottom pb-2"><i class="fas fa-list-check text-primary me-2"></i> Clinical Activity Timeline</h5>
-
-    <div class="timeline ps-3">
-        {% for item in history %}
-        <div class="d-flex align-items-start gap-3 mb-3 border-bottom pb-3">
-            <div class="bg-{% if item.prediction|lower == 'yes' %}danger{% else %}success{% endif %}-subtle text-{% if item.prediction|lower == 'yes' %}danger{% else %}success{% endif %} p-2 rounded-circle mt-1" style="width:36px; height:36px; display:flex; align-items:center; justify-content:center;">
-                <i class="fas fa-{% if item.prediction|lower == 'yes' %}triangle-exclamation{% else %}circle-check{% endif %}"></i>
-            </div>
-            <div class="flex-grow-1">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0">{{ item.patient_name }} ({{ item.cancer_type }})</h6>
-                    <span class="text-muted fs-8">{{ item.created_at|date:"M d, Y H:i" }}</span>
-                </div>
-                <div class="fs-7 text-muted">
-                    Outcome:
-                    <strong class="{% if item.prediction|lower == 'yes' %}text-danger{% else %}text-success{% endif %}">{{ item.prediction }}</strong>
-                    | Confidence: <strong>{{ item.confidence|floatformat:1 }}%</strong>
-                    | Hospital Region: <strong>{{ item.hospital_region }}</strong>
-                </div>
+    <!-- Confidence Score Distribution -->
+    <div class="col-md-6">
+        <div class="card glass-card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-main mb-3"><i class="fas fa-shield-halved text-info me-2"></i> AI Model Confidence Distribution</h5>
+            <div style="height: 260px;">
+                <canvas id="confDistChart"></canvas>
             </div>
         </div>
-        {% empty %}
-        <div class="text-center py-4 text-muted">
-            <i class="fas fa-clock fs-2 mb-2 text-secondary"></i>
-            <p>No activity history logs recorded.</p>
-        </div>
-        {% endfor %}
     </div>
+
+    <!-- Assessment Risk Score Trend Timeline -->
+    <div class="col-md-6">
+        <div class="card glass-card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-main mb-3"><i class="fas fa-chart-line text-success me-2"></i> Assessment Timeline Trend</h5>
+            <div style="height: 260px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Module 1 Risk Strata Chart
-    const riskStrata = {{ risk_strata_json|safe }};
-    const ctxRiskStrata = document.getElementById('riskStrataPieChart').getContext('2d');
-    new Chart(ctxRiskStrata, {
-        type: 'pie',
-        data: {
-            labels: ['High Risk', 'Medium Risk', 'Low Risk'],
-            datasets: [{
-                data: riskStrata && riskStrata.reduce((a,b)=>a+b, 0) > 0 ? riskStrata : [1, 2, 4],
-                backgroundColor: ['#f43f5e', '#f59e0b', '#10b981'],
-                borderWidth: 2,
-                borderColor: '#ffffff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } }
-        }
-    });
+    const riskDist = {{ risk_dist_json|safe }};
+    const ageDist = {{ age_dist_json|safe }};
+    const smokingLabels = {{ smoking_labels_json|safe }};
+    const smokingRisk = {{ smoking_risk_json|safe }};
+    const bmiRisk = {{ bmi_risk_json|safe }};
+    const confDist = {{ conf_dist_json|safe }};
+    const trendDates = {{ trend_dates_json|safe }};
+    const trendVals = {{ trend_vals_json|safe }};
 
-    // 2. Module 2 Survival Outcome Chart
-    const ctxSurvival = document.getElementById('survivalPieChart').getContext('2d');
-    new Chart(ctxSurvival, {
+    // 1. Risk Stratum
+    new Chart(document.getElementById('riskDistChart'), {
         type: 'doughnut',
         data: {
-            labels: ['Recurrence (Positive)', 'Remission (Negative)'],
-            datasets: [{
-                data: [{{ positive }}, {{ negative }}],
-                backgroundColor: ['#f43f5e', '#10b981'],
-                borderWidth: 0
-            }]
+            labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+            datasets: [{ data: riskDist, backgroundColor: ['#ef4444', '#f59e0b', '#10b981'] }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } },
-            cutout: '65%'
-        }
+        options: { responsive: true, maintainAspectRatio: false }
     });
 
-    // 3. Cancer Type Bar Chart
-    const byCancerData = {{ by_cancer_json|safe }};
-    const cancerLabels = byCancerData.map(item => item.cancer_type);
-    const cancerCounts = byCancerData.map(item => item.count);
-
-    const ctxCancer = document.getElementById('cancerTypeBarChart').getContext('2d');
-    new Chart(ctxCancer, {
+    // 2. Age Distribution
+    new Chart(document.getElementById('ageDistChart'), {
         type: 'bar',
         data: {
-            labels: cancerLabels.length ? cancerLabels : ['Breast', 'Colon', 'Lung', 'Prostate', 'Skin', 'Leukemia'],
-            datasets: [{
-                label: 'Sample Count',
-                data: cancerCounts.length ? cancerCounts : [12, 8, 15, 6, 9, 4],
-                backgroundColor: '#0284c7',
-                borderRadius: 6
-            }]
+            labels: ['< 30 yrs', '30-45 yrs', '46-60 yrs', '> 60 yrs'],
+            datasets: [{ label: 'Patient Count', data: ageDist, backgroundColor: '#0284c7' }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true } }
-        }
+        options: { responsive: true, maintainAspectRatio: false }
     });
 
-    // 4. Confidence Bands Chart
-    const confData = {{ conf_dist_json|safe }};
-    const ctxConf = document.getElementById('confDistBarChart').getContext('2d');
-    new Chart(ctxConf, {
+    // 3. Smoking vs Risk
+    new Chart(document.getElementById('smokingRiskChart'), {
         type: 'bar',
         data: {
-            labels: ['High (>85%)', 'Medium (70-85%)', 'Lower (<70%)'],
-            datasets: [{
-                label: 'Prediction Count',
-                data: confData,
-                backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
-                borderRadius: 6
-            }]
+            labels: smokingLabels.length ? smokingLabels : ['Never', 'Former', 'Occasionally', 'Daily'],
+            datasets: [{ label: 'Avg Risk Score (%)', data: smokingRisk.length ? smokingRisk : [0,0,0,0], backgroundColor: '#dc2626' }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true } }
-        }
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { max: 100 } } }
     });
-});
+
+    // 4. BMI vs Risk
+    new Chart(document.getElementById('bmiRiskChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Normal (<25)', 'Overweight (25-30)', 'Obese (>=30)'],
+            datasets: [{ label: 'Avg Risk Score (%)', data: bmiRisk, backgroundColor: '#f59e0b' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { max: 100 } } }
+    });
+
+    // 5. Confidence Distribution
+    new Chart(document.getElementById('confDistChart'), {
+        type: 'pie',
+        data: {
+            labels: ['High Conf (>=94%)', 'Med Conf (90-94%)', 'Standard Conf (<90%)'],
+            datasets: [{ data: confDist, backgroundColor: ['#0d9488', '#0284c7', '#64748b'] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    // 6. Trend Line
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: trendDates.length ? trendDates : ['Start'],
+            datasets: [{ label: 'Risk Score (%)', data: trendVals.length ? trendVals : [0], borderColor: '#10b981', tension: 0.3, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { max: 100 } } }
+    });
 </script>
 {% endblock %}

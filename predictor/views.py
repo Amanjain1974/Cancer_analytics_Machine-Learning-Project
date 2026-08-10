@@ -1,24 +1,34 @@
+import csv
 import json
 import pandas as pd
-
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Q
+from django.http import HttpResponse
+from django.core.paginator import Paginator
 
-from .forms import PredictionForm, RiskAssessmentForm
+from .forms import PredictionForm, SurvivalPredictionForm, RiskAssessmentForm
 from .models import PredictionHistory, RiskAssessmentHistory
-from .utils import load_model
-from ml.risk_engine import get_risk_assessment
+from ml.risk_engine import evaluate_patient_risk, get_model_pipeline
+from ml.survival_engine import evaluate_survival_prognosis, get_survival_pipeline
 
-_model = None
+_risk_model_cache = None
+_survival_model_cache = None
 
 
 def get_model():
-    global _model
-    if _model is None:
-        _model = load_model()
-    return _model
+    global _risk_model_cache
+    if _risk_model_cache is None:
+        _risk_model_cache = get_model_pipeline()
+    return _risk_model_cache
+
+
+def get_survival_model():
+    global _survival_model_cache
+    if _survival_model_cache is None:
+        _survival_model_cache = get_survival_pipeline()
+    return _survival_model_cache
 
 
 def home(request):
@@ -29,199 +39,342 @@ def home(request):
 
 
 @login_required
-def dashboard(request):
-    # Survival Predictions Stats (Module 2)
-    user_preds = PredictionHistory.objects.filter(user=request.user)
-    recent_predictions = user_preds.order_by("-created_at")[:5]
-    total_predictions = user_preds.count()
-    positive_count = user_preds.filter(prediction__iexact="yes").count()
-    negative_count = user_preds.filter(prediction__iexact="no").count()
-
-    # Risk Assessments Stats (Module 1)
-    user_risk = RiskAssessmentHistory.objects.filter(user=request.user)
-    recent_risk_assessments = user_risk.order_by("-created_at")[:5]
-    total_risk_assessments = user_risk.count()
-    high_risk_count = user_risk.filter(overall_risk__iexact="High").count()
-    med_risk_count = user_risk.filter(overall_risk__iexact="Medium").count()
-    low_risk_count = user_risk.filter(overall_risk__iexact="Low").count()
-
-    # Aggregated System Averages
-    avg_conf_qs = user_preds.aggregate(avg=Avg("confidence"))
-    avg_confidence = round(avg_conf_qs["avg"], 1) if avg_conf_qs["avg"] else 0.0
-
-    avg_risk_pct_qs = user_risk.aggregate(avg=Avg("risk_percentage"))
-    avg_risk_pct = round(avg_risk_pct_qs["avg"], 1) if avg_risk_pct_qs["avg"] else 0.0
-
-    # Chart data: Cancer types breakdown
-    cancer_types = list(user_preds.values("cancer_type").annotate(count=Count("id")))
-
-    # Recent predictions trend
-    trend_qs = list(user_preds.order_by("-created_at")[:10])
-    trend_qs.reverse()
-    trend_labels = [p.created_at.strftime("%b %d") for p in trend_qs]
-    trend_scores = [round(p.confidence, 1) for p in trend_qs]
-
-    # Risk Assessment Distribution Chart
-    risk_dist_json = json.dumps([high_risk_count, med_risk_count, low_risk_count])
-
-    return render(request, "dashboard.html", {
-        "recent_predictions": recent_predictions,
-        "total_predictions": total_predictions,
-        "positive_count": positive_count,
-        "negative_count": negative_count,
-        "avg_confidence": avg_confidence,
-        "recent_risk_assessments": recent_risk_assessments,
-        "total_risk_assessments": total_risk_assessments,
-        "high_risk_count": high_risk_count,
-        "med_risk_count": med_risk_count,
-        "low_risk_count": low_risk_count,
-        "avg_risk_pct": avg_risk_pct,
-        "cancer_types_json": json.dumps(cancer_types),
-        "trend_labels_json": json.dumps(trend_labels),
-        "trend_scores_json": json.dumps(trend_scores),
-        "risk_dist_json": risk_dist_json,
-    })
-
-
-@login_required
-def predict_cancer(request):
+def risk_assessment_view(request):
+    """
+    MODULE 1: Early Cancer Risk Assessment AI (Pre-Diagnosis Evaluation).
+    Evaluates 40+ pre-diagnosis lifestyle, symptom, genetic, and environmental factors.
+    Predicts probability of developing cancer in the future.
+    """
     form = PredictionForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
-        model = get_model()
 
-        # Create DataFrame with EXACT column names used during training
-        features = pd.DataFrame([{
-            "Age": data["age"],
-            "Gender": data["gender"],
-            "Race/Ethnicity": data["race_ethnicity"],
-            "BMI": data["bmi"],
-            "SmokingStatus": data["smoking_status"],
-            "FamilyHistory": data["family_history"],
-            "CancerType": data["cancer_type"],
-            "Stage": data["stage"],
-            "TumorSize": data["tumor_size"],
-            "TreatmentType": data["treatment_type"],
-            "TreatmentResponse": data["treatment_response"],
-            "SurvivalMonths": data["survival_months"],
-            "GeneticMarker": data["genetic_marker"] or "Unknown",
-            "HospitalRegion": data["hospital_region"],
-        }])
+        h_cm = data.get("height_cm", 170.0)
+        w_kg = data.get("weight_kg", 70.0)
+        bmi = round(w_kg / ((h_cm / 100.0) ** 2), 1) if h_cm > 0 else 22.5
+        data["bmi"] = bmi
 
-        prediction = model.predict(features)[0]
+        symptom_keys = [k for k in data.keys() if k.startswith("symptom_")]
+        active_symptoms = [
+            k.replace("symptom_", "").replace("_", " ").title()
+            for k in symptom_keys if data.get(k) is True
+        ]
 
-        probability = 0.0
-        confidence = 0.0
-
-        if hasattr(model, "predict_proba"):
-            probs = model.predict_proba(features)[0]
-            probability = float(max(probs))
-            confidence = round(probability * 100, 2)
-
-        recommendation = (
-            "Consult an oncologist immediately. High risk indicators detected. Follow up with comprehensive diagnostic imaging and biopsy confirmation."
-            if str(prediction).lower() == "yes"
-            else "Continue routine screening and maintain healthy lifestyle habits. Low immediate risk detected."
-        )
+        assessment = evaluate_patient_risk(data)
 
         record = PredictionHistory.objects.create(
             user=request.user,
-            **data,
-            prediction=str(prediction),
-            probability=round(probability, 4),
-            confidence=confidence,
-            recommendation=recommendation,
+            patient_name=data["patient_name"],
+            age=data["age"],
+            gender=data["gender"],
+            height_cm=h_cm,
+            weight_kg=w_kg,
+            bmi=bmi,
+            family_history=data["family_history"],
+            family_cancer_type=data.get("family_cancer_type", "None"),
+            family_affected_count=data.get("family_affected_count", 0),
+            smoking_status=data["smoking_status"],
+            cigarettes_per_day=data.get("cigarettes_per_day", 0),
+            alcohol_intake=data["alcohol_intake"],
+            tobacco_chewing=data["tobacco_chewing"],
+            exercise_frequency=data["exercise_frequency"],
+            daily_walking_mins=data["daily_walking_mins"],
+            sleep_hours=data["sleep_hours"],
+            stress_level=data["stress_level"],
+            water_intake_liters=data["water_intake_liters"],
+            vegetables_intake=data["vegetables_intake"],
+            fruits_intake=data["fruits_intake"],
+            fast_food_frequency=data["fast_food_frequency"],
+            processed_meat=data["processed_meat"],
+            red_meat=data["red_meat"],
+            sugary_drinks=data["sugary_drinks"],
+            junk_food_frequency=data["junk_food_frequency"],
+            diabetes=data["diabetes"],
+            hypertension=data["hypertension"],
+            obesity=data["obesity"],
+            chronic_inflammation=data["chronic_inflammation"],
+            previous_tumors=data["previous_tumors"],
+            genetic_disorders=data["genetic_disorders"],
+            symptoms_json=json.dumps(active_symptoms),
+            air_pollution=data["air_pollution"],
+            radiation_exposure=data["radiation_exposure"],
+            chemical_exposure=data["chemical_exposure"],
+            asbestos_exposure=data["asbestos_exposure"],
+            occupation_risk=data["occupation_risk"],
+            uv_exposure=data["uv_exposure"],
+            prediction=assessment["overall_risk"],
+            probability=round(assessment["risk_percentage"] / 100.0, 4),
+            confidence=assessment["confidence"],
+            health_score=assessment["health_score"],
+            future_risk=assessment["future_risk"],
+            risk_reduction_estimate=assessment["risk_reduction_estimate"],
+            top_risk_factors_json=assessment["top_risk_factors_json"],
+            recommendations_json=assessment["recommendations_json"],
+            recommendation=assessment["recommendations"][0] if assessment["recommendations"] else "",
+            cancer_type="Pre-Diagnosis Risk",
+            stage="N/A",
         )
 
-        messages.success(request, "Prediction completed successfully.")
+        messages.success(request, "Cancer Risk Assessment completed successfully.")
 
         return render(request, "result.html", {
-            "prediction": prediction,
-            "probability": round(probability, 4),
-            "confidence": confidence,
             "record": record,
-            "recommendation": recommendation,
+            "assessment": assessment,
+            "risk_percentage": assessment["risk_percentage"],
+            "overall_risk": assessment["overall_risk"],
+            "health_score": assessment["health_score"],
+            "confidence": assessment["confidence"],
+            "top_factors": assessment["top_risk_factors"],
+            "recommendations": assessment["recommendations"],
+            "future_risk": assessment["future_risk"],
+            "risk_reduction_estimate": assessment["risk_reduction_estimate"],
+            "active_symptoms": active_symptoms,
         })
 
     return render(request, "predict.html", {"form": form})
 
 
 @login_required
-def history(request):
-    predictions = PredictionHistory.objects.filter(
-        user=request.user
-    ).order_by("-created_at")
+def predict_cancer(request):
+    """
+    MODULE 2: Cancer Survival Prediction AI (Post-Diagnosis Clinical Prognosis).
+    For patients ALREADY DIAGNOSED with cancer.
+    Estimates survival probability, survival months, prognosis category, and oncology advice.
+    """
+    form = SurvivalPredictionForm(request.POST or None)
 
-    risk_assessments = RiskAssessmentHistory.objects.filter(
-        user=request.user
-    ).order_by("-created_at")
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
 
-    return render(request, "history.html", {
-        "predictions": predictions,
-        "risk_assessments": risk_assessments,
+        h_cm = data.get("height_cm", 175.0)
+        w_kg = data.get("weight_kg", 75.0)
+        bmi = round(w_kg / ((h_cm / 100.0) ** 2), 1) if h_cm > 0 else 24.5
+        data["bmi"] = bmi
+
+        survival_res = evaluate_survival_prognosis(data)
+
+        record = PredictionHistory.objects.create(
+            user=request.user,
+            patient_name=data["patient_name"],
+            age=data["age"],
+            gender=data["gender"],
+            height_cm=h_cm,
+            weight_kg=w_kg,
+            bmi=bmi,
+            smoking_status=data["smoking_status"],
+            hospital_region=data["hospital_region"],
+            diabetes=data["has_diabetes"],
+            hypertension=data["has_hypertension"],
+            cancer_type=data["cancer_type"],
+            stage=data["stage"],
+            tumor_size=data["tumor_size_cm"],
+            survival_months=survival_res["estimated_survival_months"],
+            treatment_type=data["treatment_type"],
+            treatment_response=data["treatment_response"],
+            genetic_marker=data["genetic_marker"],
+            prediction=survival_res["prognosis_category"],
+            probability=round(survival_res["survival_probability"] / 100.0, 4),
+            confidence=survival_res["confidence"],
+            future_risk=survival_res["predicted_outcome"],
+            top_risk_factors_json=survival_res["positive_factors_json"],
+            recommendations_json=survival_res["recommendations_json"],
+            recommendation=survival_res["recommendations"][0] if survival_res["recommendations"] else "",
+        )
+
+        messages.success(request, "Cancer Survival Prognosis Prediction completed successfully.")
+
+        return render(request, "survival_result.html", {
+            "record": record,
+            "survival_res": survival_res,
+            "survival_probability": survival_res["survival_probability"],
+            "estimated_survival_months": survival_res["estimated_survival_months"],
+            "confidence": survival_res["confidence"],
+            "prognosis_category": survival_res["prognosis_category"],
+            "predicted_outcome": survival_res["predicted_outcome"],
+            "positive_factors": survival_res["positive_factors"],
+            "negative_factors": survival_res["negative_factors"],
+            "recommendations": survival_res["recommendations"],
+        })
+
+    return render(request, "survival_predict.html", {"form": form})
+
+
+@login_required
+def dashboard(request):
+    """Dashboard displaying distinct Module 1 (Risk Assessment) and Module 2 (Survival Prognosis) statistics."""
+    user_preds = PredictionHistory.objects.filter(user=request.user)
+
+    # Distinguish Module 1 (Risk Assessment) vs Module 2 (Survival Predictions)
+    risk_preds = user_preds.filter(cancer_type__icontains="Pre-Diagnosis") | user_preds.filter(stage="N/A")
+    survival_preds = user_preds.exclude(stage="N/A").exclude(cancer_type__icontains="Pre-Diagnosis")
+
+    if not risk_preds.exists() and not survival_preds.exists():
+        risk_preds = user_preds.filter(stage="N/A")
+        survival_preds = user_preds.exclude(stage="N/A")
+
+    # Module 1 Stats
+    total_risk = risk_preds.count()
+    avg_risk_score = round((risk_preds.aggregate(avg=Avg("probability"))["avg"] or 0.0) * 100.0, 1)
+    high_risk_count = risk_preds.filter(prediction__iexact="High").count()
+    med_risk_count = risk_preds.filter(prediction__iexact="Medium").count()
+    low_risk_count = risk_preds.filter(prediction__iexact="Low").count()
+
+    # Module 2 Stats
+    total_survival = survival_preds.count()
+    avg_survival_prob = round((survival_preds.aggregate(avg=Avg("probability"))["avg"] or 0.0) * 100.0, 1)
+    avg_survival_months = round(survival_preds.aggregate(avg=Avg("survival_months"))["avg"] or 0.0, 1)
+
+    recent_predictions = user_preds.order_by("-created_at")[:6]
+
+    # Chart Datasets
+    risk_dist_json = json.dumps([high_risk_count, med_risk_count, low_risk_count])
+    survival_dist = [
+        survival_preds.filter(prediction__iexact="Excellent").count(),
+        survival_preds.filter(prediction__iexact="Good").count(),
+        survival_preds.filter(prediction__iexact="Moderate").count(),
+        survival_preds.filter(prediction__iexact="Poor").count(),
+        survival_preds.filter(prediction__iexact="Critical").count(),
+    ]
+
+    return render(request, "dashboard.html", {
+        "recent_predictions": recent_predictions,
+        "total_risk": total_risk,
+        "avg_risk_score": avg_risk_score,
+        "high_risk_count": high_risk_count,
+        "med_risk_count": med_risk_count,
+        "low_risk_count": low_risk_count,
+        "total_survival": total_survival,
+        "avg_survival_prob": avg_survival_prob,
+        "avg_survival_months": avg_survival_months,
+        "risk_dist_json": risk_dist_json,
+        "survival_dist_json": json.dumps(survival_dist),
     })
 
 
 @login_required
 def analytics(request):
-    # Survival Module Stats (Module 2)
+    """Detailed analytics for both AI modules."""
     qs = PredictionHistory.objects.filter(user=request.user)
-    total = qs.count()
-    positive = qs.filter(prediction__iexact="yes").count()
-    negative = qs.filter(prediction__iexact="no").count()
 
-    avg_conf_qs = qs.aggregate(avg=Avg("confidence"))
-    avg_confidence = round(avg_conf_qs["avg"], 1) if avg_conf_qs["avg"] else 0.0
+    risk_qs = qs.filter(cancer_type__icontains="Pre-Diagnosis") | qs.filter(stage="N/A")
+    survival_qs = qs.exclude(stage="N/A").exclude(cancer_type__icontains="Pre-Diagnosis")
 
-    by_cancer = list(qs.values("cancer_type").annotate(count=Count("id")).order_by("-count"))
-    by_region = list(qs.values("hospital_region").annotate(count=Count("id")))
+    total_risk = risk_qs.count()
+    total_survival = survival_qs.count()
 
-    high_conf = qs.filter(confidence__gte=85).count()
-    med_conf = qs.filter(confidence__gte=70, confidence__lt=85).count()
-    low_conf = qs.filter(confidence__lt=70).count()
+    high_risk = risk_qs.filter(prediction__iexact="High").count()
+    med_risk = risk_qs.filter(prediction__iexact="Medium").count()
+    low_risk = risk_qs.filter(prediction__iexact="Low").count()
 
-    # Risk Assessment Stats (Module 1)
-    risk_qs = RiskAssessmentHistory.objects.filter(user=request.user)
-    total_risk_assessments = risk_qs.count()
-    high_risk_count = risk_qs.filter(overall_risk__iexact="High").count()
-    med_risk_count = risk_qs.filter(overall_risk__iexact="Medium").count()
-    low_risk_count = risk_qs.filter(overall_risk__iexact="Low").count()
-
-    smoking_dist = list(risk_qs.values("smoking_status").annotate(count=Count("id")))
-    family_dist = list(risk_qs.values("family_history").annotate(count=Count("id")))
+    # Cancer Type Breakdown for Survival Module
+    by_cancer = list(survival_qs.values("cancer_type").annotate(count=Count("id")).order_by("-count"))
+    by_stage = list(survival_qs.values("stage").annotate(count=Count("id")))
 
     return render(request, "analytics.html", {
-        "total": total,
-        "positive": positive,
-        "negative": negative,
-        "avg_confidence": avg_confidence,
-        "history": qs[:10],
+        "total_risk": total_risk,
+        "total_survival": total_survival,
+        "high_risk": high_risk,
+        "med_risk": med_risk,
+        "low_risk": low_risk,
+        "risk_dist_json": json.dumps([high_risk, med_risk, low_risk]),
         "by_cancer_json": json.dumps(by_cancer),
-        "by_region_json": json.dumps(by_region),
-        "conf_dist_json": json.dumps([high_conf, med_conf, low_conf]),
-        "total_risk_assessments": total_risk_assessments,
-        "high_risk_count": high_risk_count,
-        "med_risk_count": med_risk_count,
-        "low_risk_count": low_risk_count,
-        "risk_strata_json": json.dumps([high_risk_count, med_risk_count, low_risk_count]),
-        "smoking_dist_json": json.dumps(smoking_dist),
-        "family_dist_json": json.dumps(family_dist),
+        "by_stage_json": json.dumps(by_stage),
     })
+
+
+@login_required
+def history(request):
+    """History of both Cancer Risk Assessments and Survival Predictions."""
+    query = request.GET.get("q", "").strip()
+    module_filter = request.GET.get("module", "").strip()
+
+    predictions_qs = PredictionHistory.objects.filter(user=request.user)
+
+    if query:
+        predictions_qs = predictions_qs.filter(
+            Q(patient_name__icontains=query) | Q(prediction__icontains=query) | Q(cancer_type__icontains=query)
+        )
+
+    if module_filter == "risk":
+        predictions_qs = predictions_qs.filter(Q(cancer_type__icontains="Pre-Diagnosis") | Q(stage="N/A"))
+    elif module_filter == "survival":
+        predictions_qs = predictions_qs.exclude(stage="N/A").exclude(cancer_type__icontains="Pre-Diagnosis")
+
+    if request.GET.get("export") == "csv":
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="cris_patient_history.csv"'
+        writer = csv.writer(response)
+        writer.writerow([
+            "Patient Name", "Age", "Gender", "Module Type", "Cancer Type / Risk",
+            "Stage", "Probability %", "Estimated Survival Months", "Prediction / Prognosis", "Date"
+        ])
+        for p in predictions_qs:
+            prob_pct = round(p.probability * 100, 1) if p.probability <= 1.0 else round(p.probability, 1)
+            m_type = "Cancer Risk Assessment" if p.stage == "N/A" else "Cancer Survival Prediction"
+            writer.writerow([
+                p.patient_name, p.age, p.gender, m_type, p.cancer_type,
+                p.stage, prob_pct, p.survival_months, p.prediction, p.created_at.strftime("%Y-%m-%d")
+            ])
+        return response
+
+    paginator = Paginator(predictions_qs.order_by("-created_at"), 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "history.html", {
+        "page_obj": page_obj,
+        "query": query,
+        "module_filter": module_filter,
+    })
+
+
+@login_required
+def report_view(request, pk):
+    """Renders printable report based on record type (Survival Prognosis vs Risk Assessment)."""
+    record = get_object_or_404(PredictionHistory, pk=pk, user=request.user)
+    prob_pct = round(record.probability * 100.0, 1) if record.probability <= 1.0 else round(record.probability, 1)
+
+    is_survival = (record.stage != "N/A" and "Pre-Diagnosis" not in record.cancer_type)
+
+    if is_survival:
+        return render(request, "survival_result.html", {
+            "record": record,
+            "survival_probability": prob_pct,
+            "estimated_survival_months": record.survival_months,
+            "confidence": record.confidence,
+            "prognosis_category": record.prediction,
+            "predicted_outcome": record.future_risk,
+            "positive_factors": record.get_top_factors(),
+            "negative_factors": [],
+            "recommendations": record.get_recommendations(),
+        })
+
+    return render(request, "report.html", {
+        "record": record,
+        "risk_pct": prob_pct,
+        "top_factors": record.get_top_factors(),
+        "recommendations": record.get_recommendations(),
+        "symptoms": record.get_symptoms(),
+    })
+
+
+@login_required
+def delete_prediction(request, pk):
+    record = get_object_or_404(PredictionHistory, pk=pk, user=request.user)
+    if request.method == "POST":
+        record.delete()
+        messages.success(request, "Record deleted successfully.")
+    return redirect("history")
 
 
 @login_required
 def profile(request):
     user_preds = PredictionHistory.objects.filter(user=request.user)
     total_preds = user_preds.count()
-    pos_preds = user_preds.filter(prediction__iexact="yes").count()
-    neg_preds = user_preds.filter(prediction__iexact="no").count()
-
     return render(request, "profile.html", {
         "user": request.user,
         "total_preds": total_preds,
-        "pos_preds": pos_preds,
-        "neg_preds": neg_preds,
         "recent_preds": user_preds.order_by("-created_at")[:5],
     })
 
@@ -235,109 +388,10 @@ def settings_view(request):
 
 
 @login_required
-def report_view(request, pk):
-    record = get_object_or_404(PredictionHistory, pk=pk, user=request.user)
-    return render(request, "report.html", {
-        "record": record,
-        "prediction": record.prediction,
-        "probability": record.probability,
-        "confidence": record.confidence,
-        "recommendation": record.recommendation,
-    })
-
-
-@login_required
-def delete_prediction(request, pk):
-    record = get_object_or_404(PredictionHistory, pk=pk, user=request.user)
-    if request.method == "POST":
-        record.delete()
-        messages.success(request, "Prediction record deleted successfully.")
-        return redirect("history")
-    return redirect("history")
-
-
-@login_required
-def risk_assessment_view(request):
-    form = RiskAssessmentForm(request.POST or None)
-
-    if request.method == "POST" and form.is_valid():
-        data = form.cleaned_data
-
-        # Calculate BMI automatically from height & weight
-        h_cm = data["height_cm"]
-        w_kg = data["weight_kg"]
-        bmi = round(w_kg / ((h_cm / 100) ** 2), 1) if h_cm > 0 else 22.0
-
-        # Execute Modular Clinical Risk Engine
-        assessment = get_risk_assessment(data)
-
-        # Save assessment record to RiskAssessmentHistory
-        top_factors_str = "\n".join(assessment["top_risk_factors"])
-        recs_str = "\n".join(assessment["recommendations"])
-
-        record = RiskAssessmentHistory.objects.create(
-            user=request.user,
-            patient_name=data["patient_name"],
-            age=data["age"],
-            gender=data["gender"],
-            height_cm=h_cm,
-            weight_kg=w_kg,
-            bmi=bmi,
-            smoking_status=data["smoking_status"],
-            alcohol_intake=data["alcohol_intake"],
-            tobacco_use=data["tobacco_use"],
-            physical_activity=data["physical_activity"],
-            diet_quality=data["diet_quality"],
-            sleep_hours=data["sleep_hours"],
-            stress_level=data["stress_level"],
-            family_history=data["family_history"],
-            family_relative=data.get("family_relative") or "None",
-            family_cancer_type=data.get("family_cancer_type") or "None",
-            has_diabetes=data["has_diabetes"],
-            has_hypertension=data["has_hypertension"],
-            is_obese=data["is_obese"],
-            previous_radiation=data["previous_radiation"],
-            previous_benign_tumors=data["previous_benign_tumors"],
-            pollution_exposure=data["pollution_exposure"],
-            chemical_exposure=data["chemical_exposure"],
-            uv_exposure=data["uv_exposure"],
-            occupation_risk=data["occupation_risk"],
-            overall_risk=assessment["overall_risk"],
-            risk_percentage=assessment["risk_percentage"],
-            confidence=assessment["confidence"],
-            top_risk_factors=top_factors_str,
-            recommendations=recs_str,
-        )
-
-        messages.success(request, "Cancer Risk Assessment completed successfully.")
-
-        return render(request, "risk_report.html", {
-            "record": record,
-            "top_factors_list": assessment["top_risk_factors"],
-            "recommendations_list": assessment["recommendations"],
-        })
-
-    return render(request, "risk_assessment.html", {"form": form})
-
-
-@login_required
 def risk_report_view(request, pk):
-    record = get_object_or_404(RiskAssessmentHistory, pk=pk, user=request.user)
-    top_factors_list = [f.strip() for f in record.top_risk_factors.split("\n") if f.strip()]
-    recommendations_list = [r.strip() for r in record.recommendations.split("\n") if r.strip()]
-
-    return render(request, "risk_report.html", {
-        "record": record,
-        "top_factors_list": top_factors_list,
-        "recommendations_list": recommendations_list,
-    })
+    return redirect("report", pk=pk)
 
 
 @login_required
 def delete_risk_assessment(request, pk):
-    record = get_object_or_404(RiskAssessmentHistory, pk=pk, user=request.user)
-    if request.method == "POST":
-        record.delete()
-        messages.success(request, "Risk assessment record deleted successfully.")
-        return redirect("history")
     return redirect("history")

@@ -12,7 +12,7 @@
   
   --bg-gradient: linear-gradient(135deg, #f0f9ff 0%, #f8fafc 50%, #e0f2fe 100%);
   --bg-body: #f8fafc;
-  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-bg: rgba(255, 255, 255, 0.95);
   --card-border: rgba(226, 232, 240, 0.8);
   --text-main: #0f172a;
   --text-muted: #64748b;
@@ -42,7 +42,7 @@
   
   --bg-gradient: linear-gradient(135deg, #0b1329 0%, #0f172a 50%, #1e293b 100%);
   --bg-body: #0b1329;
-  --card-bg: rgba(30, 41, 59, 0.85);
+  --card-bg: rgba(30, 41, 59, 0.95);
   --card-border: rgba(51, 65, 85, 0.8);
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
@@ -81,7 +81,7 @@ main {
   border: 1px solid var(--card-border);
   border-radius: 1rem;
   box-shadow: var(--shadow-md);
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease;
 }
 
 .glass-card:hover {
@@ -185,24 +185,34 @@ main {
   transform: translateY(-2px);
 }
 
-/* Multi-step Form Wizard */
+/* Form Wizard Section Container (Full Width Block) */
+.wizard-section {
+  display: block;
+  width: 100%;
+  position: relative;
+}
+
+.wizard-section.d-none {
+  display: none !important;
+}
+
+/* Multi-step Form Wizard Circular Step Indicators */
 .wizard-steps {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
   position: relative;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2.2rem;
 }
 
 .wizard-steps::before {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
+  top: 24px;
+  left: 10%;
+  right: 10%;
   height: 3px;
   background: var(--card-border);
   z-index: 1;
-  transform: translateY(-50%);
 }
 
 .wizard-step {
@@ -219,6 +229,7 @@ main {
   font-weight: 700;
   color: var(--text-muted);
   transition: all 0.3s ease;
+  margin: 0 auto;
 }
 
 .wizard-step.active {
@@ -236,42 +247,18 @@ main {
 
 .wizard-label {
   position: absolute;
-  top: 54px;
+  top: 52px;
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-muted);
 }
 
 .wizard-step.active + .wizard-label {
   color: var(--primary-color);
-}
-
-/* Custom Range Slider */
-.form-range-custom {
-  -webkit-appearance: none;
-  width: 100%;
-  height: 8px;
-  border-radius: 4px;
-  background: #e2e8f0;
-  outline: none;
-}
-
-.form-range-custom::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transition: transform 0.15s ease;
-}
-
-.form-range-custom::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+  font-weight: 700;
 }
 
 /* Input Icon Group */
@@ -337,21 +324,6 @@ main {
   color: #ffffff;
 }
 
-.scanner-wave {
-  width: 120px;
-  height: 120px;
-  border: 4px solid rgba(2, 132, 199, 0.2);
-  border-top-color: #0284c7;
-  border-right-color: #0d9488;
-  border-radius: 50%;
-  animation: spin 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* Back to Top Button */
 .back-to-top {
   position: fixed;
@@ -392,86 +364,6 @@ main {
   z-index: 1090;
 }
 
-/* Gateway Module Cards */
-.gateway-card {
-  border: 1px solid var(--card-border);
-  border-radius: 1.25rem;
-  background: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.gateway-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 6px;
-  background: linear-gradient(90deg, var(--primary-color), var(--teal-color));
-  opacity: 0.8;
-}
-
-.gateway-card:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--primary-color);
-}
-
-/* Clinical Rationale Box */
-.clinical-rationale-box {
-  background: rgba(2, 132, 199, 0.06);
-  border-left: 4px solid var(--primary-color);
-  padding: 0.75rem 1rem;
-  border-radius: 0 0.5rem 0.5rem 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-top: 0.4rem;
-}
-
-[data-bs-theme="dark"] .clinical-rationale-box {
-  background: rgba(56, 189, 248, 0.1);
-  color: #cbd5e1;
-}
-
-/* Radial Gauge / Meter */
-.gauge-container {
-  position: relative;
-  width: 160px;
-  height: 160px;
-  margin: 0 auto;
-}
-
-.gauge-circle {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: conic-gradient(var(--gauge-color, #0284c7) calc(var(--gauge-pct, 50) * 1%), rgba(226, 232, 240, 0.4) 0);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.05);
-}
-
-[data-bs-theme="dark"] .gauge-circle {
-  background: conic-gradient(var(--gauge-color, #38bdf8) calc(var(--gauge-pct, 50) * 1%), rgba(51, 65, 85, 0.6) 0);
-}
-
-.gauge-inner {
-  width: 124px;
-  height: 124px;
-  border-radius: 50%;
-  background: var(--card-bg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-sm);
-}
-
 /* Print CSS */
 @media print {
   .navbar-glass, footer, .btn-no-print, .back-to-top {
@@ -486,4 +378,3 @@ main {
     border: 1px solid #ccc !important;
   }
 }
-

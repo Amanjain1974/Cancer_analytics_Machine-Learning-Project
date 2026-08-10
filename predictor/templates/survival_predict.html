@@ -1,0 +1,314 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cancer Survival Prediction AI | CRIS AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+
+        <!-- Page Header -->
+        <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-teal-subtle text-teal border border-teal-subtle rounded-pill mb-2 fs-7 fw-semibold" style="background:#ccfbf1; color:#0d9488;">
+                <i class="fas fa-stethoscope"></i> Module 2: Post-Diagnosis Clinical Survival Prognosis
+            </div>
+            <h2 class="fw-bold text-main">Cancer Survival Prediction AI</h2>
+            <p class="text-muted">
+                Post-diagnosis clinical prognosis engine estimating survival probability, estimated survival months, therapy response impact, and oncology guidance for diagnosed patients.
+            </p>
+        </div>
+
+        <!-- Wizard Card -->
+        <div class="card glass-card border-0 shadow-lg mb-5">
+            
+            <!-- Card Header with Steps Bar -->
+            <div class="card-header bg-body-tertiary border-bottom p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <h5 class="fw-bold text-main mb-0"><i class="fas fa-microscope text-teal me-2" style="color:#0d9488;"></i> Clinical Prognosis Evaluation</h5>
+                        <small class="text-muted">Enter cancer staging, tumor metrics, and treatment response parameters.</small>
+                    </div>
+                    <div class="badge bg-teal text-white rounded-pill px-3 py-2 fw-bold" id="survStepCounterBadge" style="background:#0d9488;">
+                        Step 1 of 3
+                    </div>
+                </div>
+
+                <!-- Visual Step Indicators -->
+                <div class="wizard-steps px-2 pt-2 mb-4">
+                    <div class="text-center position-relative">
+                        <div class="wizard-step active" id="surv-step-icon-1">1</div>
+                        <div class="wizard-label">Patient Profile</div>
+                    </div>
+                    <div class="text-center position-relative">
+                        <div class="wizard-step" id="surv-step-icon-2">2</div>
+                        <div class="wizard-label">Cancer Staging</div>
+                    </div>
+                    <div class="text-center position-relative">
+                        <div class="wizard-step" id="surv-step-icon-3">3</div>
+                        <div class="wizard-label">Treatment Response</div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress bg-secondary-subtle" style="height: 6px;">
+                    <div class="progress-bar" id="survWizardProgressBar" role="progressbar" style="width: 33%; background-color:#0d9488;"></div>
+                </div>
+            </div>
+
+            <!-- Card Body containing the Form -->
+            <div class="card-body p-4 p-md-5">
+                <form method="post" id="survivalForm" action="{% url 'predict' %}" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Step 1: Patient Profile & Comorbidities -->
+                    <div class="wizard-section" id="surv-step-section-1">
+                        <h5 class="fw-bold text-teal mb-3" style="color:#0d9488;"><i class="fas fa-user-doctor me-2"></i> 1. Patient Demographic Profile & Comorbidities</h5>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Patient Full Name</label>
+                                {{ form.patient_name }}
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <label class="form-label fw-semibold">Age (Years)</label>
+                                {{ form.age }}
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <label class="form-label fw-semibold">Gender</label>
+                                {{ form.gender }}
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <label class="form-label fw-semibold">Height (cm)</label>
+                                {{ form.height_cm }}
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <label class="form-label fw-semibold">Weight (kg)</label>
+                                {{ form.weight_kg }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Calculated BMI</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control fw-bold bg-body-tertiary" id="surv_bmi_preview" value="24.5" readonly>
+                                    <span class="input-group-text badge text-bg-success" id="surv_bmi_badge">Normal</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Smoking Status</label>
+                                {{ form.smoking_status }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Hospital Region</label>
+                                {{ form.hospital_region }}
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold text-secondary border-bottom pb-2 mb-3"><i class="fas fa-heart-pulse me-2"></i> Pre-existing Health Conditions</h6>
+                        <div class="row g-3">
+                            <div class="col-md-3 col-6">
+                                <label class="form-label fw-semibold">Type-2 Diabetes</label>
+                                {{ form.has_diabetes }}
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <label class="form-label fw-semibold">Hypertension</label>
+                                {{ form.has_hypertension }}
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <label class="form-label fw-semibold">Heart Disease</label>
+                                {{ form.has_heart_disease }}
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <label class="form-label fw-semibold">Kidney Disease</label>
+                                {{ form.has_kidney_disease }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                            <button type="button" class="btn text-white px-4 rounded-pill" style="background:#0d9488;" onclick="goToSurvStep(2)">
+                                Next Step: Cancer Staging <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Cancer Diagnosis & Staging -->
+                    <div class="wizard-section d-none" id="surv-step-section-2">
+                        <h5 class="fw-bold text-teal mb-3" style="color:#0d9488;"><i class="fas fa-dna me-2"></i> 2. Cancer Staging & Tumor Parameters</h5>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Diagnosed Cancer Type</label>
+                                {{ form.cancer_type }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Cancer Stage at Diagnosis</label>
+                                {{ form.stage }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Tumor Size (cm)</label>
+                                {{ form.tumor_size_cm }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Time Since Diagnosis (Months)</label>
+                                {{ form.diagnosis_months }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Identified Genetic Biomarker</label>
+                                {{ form.genetic_marker }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Distant Metastasis Detected?</label>
+                                {{ form.metastasis }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Lymph Node Involvement?</label>
+                                {{ form.lymph_nodes }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" onclick="goToSurvStep(1)">
+                                <i class="fas fa-arrow-left me-2"></i> Back
+                            </button>
+                            <button type="button" class="btn text-white px-4 rounded-pill" style="background:#0d9488;" onclick="goToSurvStep(3)">
+                                Next Step: Treatment Response <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Treatment & Response Parameters -->
+                    <div class="wizard-section d-none" id="surv-step-section-3">
+                        <h5 class="fw-bold text-teal mb-3" style="color:#0d9488;"><i class="fas fa-syringe me-2"></i> 3. Treatment Modality & Clinical Response</h5>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Primary Treatment Type Received</label>
+                                {{ form.treatment_type }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Clinical Response to Treatment</label>
+                                {{ form.treatment_response }}
+                            </div>
+                        </div>
+
+                        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-3">
+                            <i class="fas fa-clipboard-check fs-3 text-success"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Post-Diagnosis Clinical Prognosis AI Model</h6>
+                                <p class="mb-0 small">Outputs survival probability (%), estimated survival months, and evidence-based oncology treatment recommendations.</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" onclick="goToSurvStep(2)">
+                                <i class="fas fa-arrow-left me-2"></i> Back
+                            </button>
+                            <button type="submit" class="btn text-white px-5 py-2 rounded-pill fw-bold shadow" style="background:#0d9488;" id="submitSurvivalBtn">
+                                <i class="fas fa-chart-pie me-2"></i> Calculate Survival Prognosis
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Loading Overlay Animation -->
+<div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 align-items-center justify-content-center text-white text-center d-none" style="z-index: 9999;">
+    <div>
+        <div class="spinner-border text-teal mb-3" style="width: 4rem; height: 4rem; color:#0d9488;" role="status"></div>
+        <h4 class="fw-bold">Evaluating Survival Prognosis...</h4>
+        <p class="text-light opacity-75">Running calibrated post-diagnosis survival model pipeline</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function calculateSurvBMI() {
+        const heightInput = document.getElementById('id_surv_height_cm');
+        const weightInput = document.getElementById('id_surv_weight_kg');
+        if (!heightInput || !weightInput) return;
+
+        const height = parseFloat(heightInput.value) || 0;
+        const weight = parseFloat(weightInput.value) || 0;
+        
+        if (height > 0 && weight > 0) {
+            const bmi = (weight / ((height / 100) * (height / 100))).toFixed(1);
+            const bmiPrev = document.getElementById('surv_bmi_preview');
+            if (bmiPrev) bmiPrev.value = bmi;
+            
+            const badge = document.getElementById('surv_bmi_badge');
+            if (badge) {
+                if (bmi < 18.5) {
+                    badge.className = 'input-group-text badge text-bg-warning';
+                    badge.innerText = 'Underweight';
+                } else if (bmi < 25.0) {
+                    badge.className = 'input-group-text badge text-bg-success';
+                    badge.innerText = 'Normal';
+                } else if (bmi < 30.0) {
+                    badge.className = 'input-group-text badge text-bg-warning';
+                    badge.innerText = 'Overweight';
+                } else {
+                    badge.className = 'input-group-text badge text-bg-danger';
+                    badge.innerText = 'Obese';
+                }
+            }
+        }
+    }
+
+    const hIn = document.getElementById('id_surv_height_cm');
+    const wIn = document.getElementById('id_surv_weight_kg');
+    if (hIn) hIn.addEventListener('input', calculateSurvBMI);
+    if (wIn) wIn.addEventListener('input', calculateSurvBMI);
+    calculateSurvBMI();
+
+    function goToSurvStep(stepNum) {
+        if (stepNum < 1 || stepNum > 3) return;
+
+        document.querySelectorAll('.wizard-section').forEach(sec => {
+            sec.classList.add('d-none');
+        });
+
+        const target = document.getElementById('surv-step-section-' + stepNum);
+        if (target) target.classList.remove('d-none');
+
+        for (let i = 1; i <= 3; i++) {
+            const icon = document.getElementById('surv-step-icon-' + i);
+            if (!icon) continue;
+            if (i === stepNum) {
+                icon.className = 'wizard-step active';
+                icon.textContent = i;
+            } else if (i < stepNum) {
+                icon.className = 'wizard-step completed';
+                icon.innerHTML = '<i class="fas fa-check"></i>';
+            } else {
+                icon.className = 'wizard-step';
+                icon.textContent = i;
+            }
+        }
+
+        const progressBar = document.getElementById('survWizardProgressBar');
+        if (progressBar) {
+            const pct = ((stepNum - 1) / 2) * 100;
+            progressBar.style.width = pct + '%';
+        }
+
+        const stepBadge = document.getElementById('survStepCounterBadge');
+        if (stepBadge) {
+            stepBadge.textContent = 'Step ' + stepNum + ' of 3';
+        }
+
+        window.scrollTo({ top: 120, behavior: 'smooth' });
+    }
+
+    document.getElementById('survivalForm').addEventListener('submit', function() {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.classList.remove('d-none');
+            overlay.classList.add('d-flex');
+        }
+    });
+</script>
+{% endblock %}

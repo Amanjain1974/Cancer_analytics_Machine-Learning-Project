@@ -1,175 +1,225 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Prediction Result - Cancer Risk Intelligence System{% endblock %}
-
-{% block breadcrumbs %}
-<nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="fas fa-house me-1"></i> Home</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'predict' %}">Predict</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Diagnostic Result</li>
-    </ol>
-</nav>
-{% endblock %}
+{% block title %}Cancer Risk Assessment Results | CRIS AI{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-10">
+    <div class="col-lg-10 col-xl-9">
 
-        <!-- Main Risk Banner Card -->
-        <div class="glass-card p-4 p-md-5 shadow-lg border-0 mb-4 position-relative overflow-hidden">
-            <div class="row align-items-center g-4">
-                
-                <div class="col-md-7">
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <span class="fs-7 fw-bold text-uppercase tracking-wider text-muted">AI Risk Assessment Result</span>
-                        {% if prediction|lower == 'yes' %}
-                        <span class="badge badge-risk-high"><i class="fas fa-triangle-exclamation me-1"></i> HIGH RISK DETECTED</span>
+        <!-- Top Header & Status -->
+        <div class="d-flex flex-column flex-md-row align-items-center justify-content-between mb-4 gap-3">
+            <div>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 fw-bold fs-7 mb-1">
+                    <i class="fas fa-microchip me-1"></i> AI Evaluation Complete
+                </span>
+                <h2 class="fw-bold text-main mb-0">Risk Assessment for {{ record.patient_name }}</h2>
+                <small class="text-muted"><i class="fas fa-clock me-1"></i> Assessed on {{ record.created_at|date:"d M Y, H:i" }}</small>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'report' record.pk %}" class="btn btn-outline-primary rounded-pill px-3">
+                    <i class="fas fa-file-pdf me-1"></i> Download PDF
+                </a>
+                <a href="{% url 'predict' %}" class="btn btn-primary rounded-pill px-4">
+                    <i class="fas fa-rotate-right me-1"></i> Assess Again
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Risk KPI Summary Grid -->
+        <div class="row g-4 mb-4">
+            
+            <!-- Cancer Risk Score Card -->
+            <div class="col-md-4">
+                <div class="card glass-card border-0 shadow-sm text-center p-4 h-100 position-relative overflow-hidden">
+                    <h6 class="text-uppercase text-muted fw-bold fs-7 mb-3">Overall Cancer Risk</h6>
+                    
+                    <div class="position-relative d-inline-flex align-items-center justify-content-center my-2">
+                        <div class="fs-1 fw-extrabold {% if overall_risk == 'High' %}text-danger{% elif overall_risk == 'Medium' %}text-warning{% else %}text-success{% endif %}">
+                            {{ risk_percentage }}%
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        {% if overall_risk == 'High' %}
+                            <span class="badge bg-danger text-white rounded-pill px-4 py-2 fs-6 fw-bold shadow-sm">
+                                <i class="fas fa-triangle-exclamation me-1"></i> HIGH RISK
+                            </span>
+                        {% elif overall_risk == 'Medium' %}
+                            <span class="badge bg-warning text-dark rounded-pill px-4 py-2 fs-6 fw-bold shadow-sm">
+                                <i class="fas fa-triangle-exclamation me-1"></i> MEDIUM RISK
+                            </span>
                         {% else %}
-                        <span class="badge badge-risk-low"><i class="fas fa-circle-check me-1"></i> LOW RISK / ROUTINE</span>
+                            <span class="badge bg-success text-white rounded-pill px-4 py-2 fs-6 fw-bold shadow-sm">
+                                <i class="fas fa-circle-check me-1"></i> LOW RISK
+                            </span>
                         {% endif %}
                     </div>
 
-                    <h1 class="display-5 fw-extrabold mb-2">
-                        {% if prediction|lower == 'yes' %}
-                        <span class="text-danger">Positive Risk Classification</span>
-                        {% else %}
-                        <span class="text-success">Negative Risk Classification</span>
-                        {% endif %}
-                    </h1>
-
-                    <p class="lead text-muted mb-4">
-                        Evaluated by Ensemble Scikit-Learn Model based on submitted clinical feature parameters.
-                    </p>
-
-                    <div class="d-flex flex-wrap gap-2">
-                        <a href="{% url 'predict' %}" class="btn btn-medical-primary px-4 py-2 rounded-pill fw-bold shadow">
-                            <i class="fas fa-rotate-right me-2"></i> Predict Again
-                        </a>
-                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-bold">
-                            <i class="fas fa-chart-line me-2"></i> Dashboard
-                        </a>
-                        {% if record %}
-                        <a href="{% url 'report' record.pk %}" class="btn btn-outline-primary px-4 py-2 rounded-pill fw-bold" target="_blank">
-                            <i class="fas fa-file-pdf me-2"></i> Download PDF Report
-                        </a>
-                        {% endif %}
-                        <button onclick="window.print()" class="btn btn-outline-dark px-4 py-2 rounded-pill fw-bold btn-no-print">
-                            <i class="fas fa-print me-2"></i> Print Result
-                        </button>
+                    <!-- Progress Bar Indicator -->
+                    <div class="progress mt-4" style="height: 10px;">
+                        <div class="progress-bar {% if overall_risk == 'High' %}bg-danger{% elif overall_risk == 'Medium' %}bg-warning{% else %}bg-success{% endif %}"
+                             role="progressbar" style="width: {{ risk_percentage }}%;"></div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-5 text-center">
-                    <!-- Circular SVG Gauge -->
-                    <div class="position-relative d-inline-block">
-                        <svg width="200" height="200" viewBox="0 0 120 120">
-                            <circle cx="60" cy="60" r="50" fill="none" stroke="var(--card-border)" stroke-width="10"/>
-                            <circle cx="60" cy="60" r="50" fill="none" 
-                                    stroke="{% if prediction|lower == 'yes' %}#f43f5e{% else %}#10b981{% endif %}" 
-                                    stroke-width="10" 
-                                    stroke-dasharray="314" 
-                                    stroke-dashoffset="{{ 314|add:'-314' }}"
-                                    style="stroke-dashoffset: calc(314 - (314 * {{ confidence|default:0 }}) / 100); transition: stroke-dashoffset 1.5s ease; transform: rotate(-90deg); transform-origin: 50% 50%;"
-                                    stroke-linecap="round"/>
-                        </svg>
-                        <div class="position-absolute top-50 start-50 translate-middle text-center">
-                            <div class="display-6 fw-extrabold mb-0">{{ confidence|floatformat:1 }}%</div>
-                            <div class="fs-8 text-muted fw-bold text-uppercase">Confidence</div>
+            <!-- Health Score Card -->
+            <div class="col-md-4">
+                <div class="card glass-card border-0 shadow-sm text-center p-4 h-100">
+                    <h6 class="text-uppercase text-muted fw-bold fs-7 mb-3">Preventive Health Score</h6>
+                    
+                    <div class="fs-1 fw-extrabold text-teal my-2" style="color: #0d9488;">
+                        {{ health_score }} <span class="fs-5 text-muted fw-normal">/ 100</span>
+                    </div>
+
+                    <p class="small text-muted mb-0">
+                        Based on dietary habits, physical activity, sleep quality, and BMI index.
+                    </p>
+
+                    <div class="progress mt-4 bg-body-tertiary" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ health_score }}%; background-color: #0d9488;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Confidence Score Card -->
+            <div class="col-md-4">
+                <div class="card glass-card border-0 shadow-sm text-center p-4 h-100">
+                    <h6 class="text-uppercase text-muted fw-bold fs-7 mb-3">Model Confidence</h6>
+                    
+                    <div class="fs-1 fw-extrabold text-primary my-2">
+                        {{ confidence }}%
+                    </div>
+
+                    <p class="small text-muted mb-0">
+                        Calibrated prediction confidence across 5-fold ensemble classifier.
+                    </p>
+
+                    <div class="progress mt-4 bg-body-tertiary" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ confidence }}%;"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Future Risk Alert Projection -->
+        <div class="alert {% if overall_risk == 'High' %}alert-danger{% elif overall_risk == 'Medium' %}alert-warning{% else %}alert-success{% endif %} border-0 shadow-sm p-4 mb-4 rounded-4">
+            <div class="d-flex align-items-start gap-3">
+                <i class="fas fa-clock-rotate-left fs-2 mt-1"></i>
+                <div>
+                    <h5 class="fw-bold mb-1">Estimated Long-Term Future Risk Projection</h5>
+                    <p class="mb-2 fs-6 opacity-90">{{ future_risk }}</p>
+                    <div class="d-inline-flex align-items-center gap-2 bg-white bg-opacity-75 px-3 py-1 rounded-pill fw-bold text-dark fs-7">
+                        <i class="fas fa-arrow-trend-down text-success"></i> Estimated Risk Reduction Potential: <span class="text-success fw-bold">{{ risk_reduction_estimate }}%</span> if clinical recommendations are adopted.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Importance & Symptoms Grid -->
+        <div class="row g-4 mb-4">
+            
+            <!-- Most Contributing Risk Factors -->
+            <div class="col-md-7">
+                <div class="card glass-card border-0 shadow-sm h-100 p-4">
+                    <h5 class="fw-bold text-main mb-3"><i class="fas fa-chart-bar text-primary me-2"></i> Major Contributing Risk Factors</h5>
+                    <p class="text-muted small">Feature importance breakdown of key factors influencing your assessment score:</p>
+
+                    <div class="mt-3">
+                        {% for factor in top_factors %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-semibold text-main fs-7"><i class="fas fa-caret-right text-primary me-1"></i> {{ factor.factor }}</span>
+                                <span class="badge bg-danger-subtle text-danger fw-bold fs-7">{{ factor.contribution }}</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-danger" role="progressbar" style="width: {{ factor.contribution|slice:'1:-1' }}%;"></div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No high-risk specific drivers identified.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detected Symptoms & Quick Metrics -->
+            <div class="col-md-5">
+                <div class="card glass-card border-0 shadow-sm h-100 p-4">
+                    <h5 class="fw-bold text-main mb-3"><i class="fas fa-notes-medical text-teal me-2" style="color:#0d9488;"></i> Patient Profile & Symptoms</h5>
+                    
+                    <ul class="list-group list-group-flush mb-3">
+                        <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2">
+                            <span class="text-muted fs-7">Age / Gender:</span>
+                            <span class="fw-bold fs-7">{{ record.age }} yrs / {{ record.gender }}</span>
+                        </li>
+                        <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2">
+                            <span class="text-muted fs-7">Body Mass Index (BMI):</span>
+                            <span class="fw-bold fs-7">{{ record.bmi }}</span>
+                        </li>
+                        <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2">
+                            <span class="text-muted fs-7">Smoking Status:</span>
+                            <span class="fw-bold fs-7">{{ record.smoking_status }}</span>
+                        </li>
+                        <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2">
+                            <span class="text-muted fs-7">Family History:</span>
+                            <span class="fw-bold fs-7">{{ record.family_history }}</span>
+                        </li>
+                    </ul>
+
+                    <h6 class="fw-bold fs-7 text-secondary mb-2">Detected Symptoms:</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for symptom in active_symptoms %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-2 fs-7">
+                            <i class="fas fa-circle-exclamation me-1"></i> {{ symptom }}
+                        </span>
+                        {% empty %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 fs-7">
+                            <i class="fas fa-check-circle me-1"></i> No Active Symptoms Reported
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Clinical Recommendations Card -->
+        <div class="card glass-card border-0 shadow-sm p-4 p-md-5 mb-5">
+            <h4 class="fw-bold text-main mb-3"><i class="fas fa-clipboard-check text-success me-2"></i> Personalized Clinical Recommendations</h4>
+            <p class="text-muted">Evidence-based preventive advice derived from your specific risk factors:</p>
+
+            <div class="row g-3 mt-2">
+                {% for rec in recommendations %}
+                <div class="col-12">
+                    <div class="p-3 bg-body-tertiary rounded-3 border-start border-4 border-success d-flex align-items-start gap-3">
+                        <i class="fas fa-circle-check text-success fs-5 mt-1"></i>
+                        <div>
+                            <p class="mb-0 fw-semibold text-main">{{ rec }}</p>
                         </div>
                     </div>
                 </div>
-
-            </div>
-        </div>
-
-        <!-- Metrics Row -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-4">
-                <div class="glass-card p-4 text-center h-100 hover-lift">
-                    <i class="fas fa-bullseye fs-2 text-primary mb-2"></i>
-                    <h6 class="text-muted fw-semibold mb-1">Prediction Output</h6>
-                    <h3 class="fw-extrabold mb-0 {% if prediction|lower == 'yes' %}text-danger{% else %}text-success{% endif %}">
-                        {{ prediction }}
-                    </h3>
+                {% empty %}
+                <div class="col-12">
+                    <p class="text-muted">Continue regular health maintenance and annual wellness exams.</p>
                 </div>
+                {% endfor %}
             </div>
 
-            <div class="col-md-4">
-                <div class="glass-card p-4 text-center h-100 hover-lift">
-                    <i class="fas fa-percent fs-2 text-teal mb-2" style="color:#0d9488;"></i>
-                    <h6 class="text-muted fw-semibold mb-1">Probability Score</h6>
-                    <h3 class="fw-extrabold text-dark mb-0">{{ probability|floatformat:4 }}</h3>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="glass-card p-4 text-center h-100 hover-lift">
-                    <i class="fas fa-shield-cat fs-2 text-warning mb-2"></i>
-                    <h6 class="text-muted fw-semibold mb-1">Model Confidence</h6>
-                    <h3 class="fw-extrabold text-dark mb-0">{{ confidence|floatformat:1 }}%</h3>
+            <!-- Action Toolbar -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-5 pt-3 border-top">
+                <a href="{% url 'history' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                    <i class="fas fa-history me-1"></i> View Full History
+                </a>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'report' record.pk %}" class="btn btn-primary rounded-pill px-4">
+                        <i class="fas fa-file-pdf me-1"></i> Generate Printable PDF Report
+                    </a>
                 </div>
             </div>
         </div>
-
-        <!-- Medical Recommendation Card -->
-        <div class="glass-card p-4 mb-4 border-start border-4 {% if prediction|lower == 'yes' %}border-danger{% else %}border-success{% endif %}">
-            <h4 class="fw-bold mb-3 d-flex align-items-center gap-2">
-                <i class="fas fa-user-nurse {% if prediction|lower == 'yes' %}text-danger{% else %}text-success{% endif %}"></i>
-                Clinical Recommendation & Guidance
-            </h4>
-            <p class="fs-6 text-dark mb-0 leading-relaxed">
-                {{ recommendation }}
-            </p>
-        </div>
-
-        <!-- Patient Summary Parameters Grid -->
-        {% if record %}
-        <div class="glass-card p-4">
-            <h5 class="fw-bold mb-4 border-bottom pb-2"><i class="fas fa-id-card text-primary me-2"></i> Evaluated Patient Profile</h5>
-            
-            <div class="row g-3 fs-7">
-                <div class="col-sm-6 col-md-4">
-                    <span class="text-muted d-block">Patient Name:</span>
-                    <strong class="text-dark">{{ record.patient_name }}</strong>
-                </div>
-                <div class="col-sm-6 col-md-4">
-                    <span class="text-muted d-block">Age / Gender:</span>
-                    <strong class="text-dark">{{ record.age }} yrs / {{ record.gender }}</strong>
-                </div>
-                <div class="col-sm-6 col-md-4">
-                    <span class="text-muted d-block">Race / Ethnicity:</span>
-                    <strong class="text-dark">{{ record.race_ethnicity }}</strong>
-                </div>
-                <div class="col-sm-6 col-md-4">
-                    <span class="text-muted d-block">BMI Metric:</span>
-                    <strong class="text-dark">{{ record.bmi }}</strong>
-                </div>
-                <div class="col-sm-6 col-md-4">
-                    <span class="text-muted d-block">Cancer Type / Stage:</span>
-                    <strong class="text-dark">{{ record.cancer_type }} ({{ record.stage }})</strong>
-                </div>
-                <div class="col-sm-6 col-md-4">
-                    <span class="text-muted d-block">Tumor Size / Genetic Marker:</span>
-                    <strong class="text-dark">{{ record.tumor_size }} cm / {{ record.genetic_marker }}</strong>
-                </div>
-                <div class="col-sm-6 col-md-4">
-                    <span class="text-muted d-block">Treatment Type & Response:</span>
-                    <strong class="text-dark">{{ record.treatment_type }} ({{ record.treatment_response }})</strong>
-                </div>
-                <div class="col-sm-6 col-md-4">
-                    <span class="text-muted d-block">Hospital Region:</span>
-                    <strong class="text-dark">{{ record.hospital_region }} Region</strong>
-                </div>
-                <div class="col-sm-6 col-md-4">
-                    <span class="text-muted d-block">Assessment Date:</span>
-                    <strong class="text-dark">{{ record.created_at|date:"M d, Y H:i" }}</strong>
-                </div>
-            </div>
-        </div>
-        {% endif %}
 
     </div>
 </div>
