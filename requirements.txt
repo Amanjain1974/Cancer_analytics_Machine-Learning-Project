@@ -5,3 +5,5 @@ scikit-learn
 joblib
 matplotlib
 bootstrap4
+django-crispy-forms
+crispy-bootstrap5
