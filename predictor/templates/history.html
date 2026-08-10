@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Prediction History - Cancer Risk Intelligence System{% endblock %}
+{% block title %}Prediction & Assessment History - Cancer Risk Intelligence System{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="fas fa-house me-1"></i> Home</a></li>
         <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Prediction History</li>
+        <li class="breadcrumb-item active" aria-current="page">History Logs</li>
     </ol>
 </nav>
 {% endblock %}
@@ -18,148 +18,250 @@
 <div class="glass-card p-4 mb-4 hero-gradient text-white border-0 shadow">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
-            <h2 class="fw-extrabold mb-1 text-white"><i class="fas fa-file-medical me-2"></i> Prediction History Logs</h2>
-            <p class="mb-0 text-white-50">Search, filter, export, and manage all your historical patient risk assessments.</p>
+            <h2 class="fw-extrabold mb-1 text-white"><i class="fas fa-file-medical me-2"></i> Patient Assessment History Logs</h2>
+            <p class="mb-0 text-white-50">Search, filter, export, and manage your historical pre-diagnosis risk screenings and clinical survival evaluations.</p>
         </div>
         <div class="d-flex gap-2">
             <button onclick="exportHistoryCSV()" class="btn btn-light rounded-pill fw-bold text-primary shadow hover-lift px-3">
                 <i class="fas fa-file-csv me-1"></i> Export CSV
             </button>
-            <a href="{% url 'predict' %}" class="btn btn-outline-light rounded-pill fw-bold hover-lift px-3">
+            <a href="{% url 'risk_assessment' %}" class="btn btn-outline-light rounded-pill fw-bold hover-lift px-3">
                 <i class="fas fa-plus me-1"></i> New Assessment
             </a>
         </div>
     </div>
 </div>
 
-<!-- Controls Bar: Search & Risk Filter -->
+<!-- Controls Bar: Search & Filter -->
 <div class="glass-card p-3 mb-4">
     <div class="row g-3 align-items-center">
-        <div class="col-md-6">
+        <div class="col-md-7">
             <div class="input-group">
                 <span class="input-group-text"><i class="fas fa-magnifying-glass text-primary"></i></span>
-                <input type="text" id="historySearchInput" class="form-control" placeholder="Search patient name, cancer type, region..." onkeyup="filterHistoryTable()">
+                <input type="text" id="historySearchInput" class="form-control" placeholder="Search patient name, risk factor, status..." onkeyup="filterHistoryTable()">
             </div>
         </div>
 
-        <div class="col-md-4">
-            <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-filter text-primary"></i></span>
-                <select id="historyRiskFilter" class="form-select" onchange="filterHistoryTable()">
-                    <option value="all">Filter by Risk: All Results</option>
-                    <option value="yes">High Risk (Yes)</option>
-                    <option value="no">Low Risk (No)</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="col-md-2 text-md-end">
-            <span class="badge bg-primary-subtle text-primary border rounded-pill px-3 py-2 fw-bold" id="historyRecordCount">
-                {{ predictions|length }} Records
+        <div class="col-md-5 text-md-end">
+            <span class="badge bg-primary-subtle text-primary border rounded-pill px-3 py-2 fw-bold me-2">
+                {{ risk_assessments|length }} Risk Screenings
+            </span>
+            <span class="badge bg-teal-subtle text-teal border border-teal-subtle rounded-pill px-3 py-2 fw-bold" style="background:#ccfbf1; color:#0d9488;">
+                {{ predictions|length }} Survival Predictions
             </span>
         </div>
     </div>
 </div>
 
-<!-- History Table Card -->
-<div class="glass-card p-4">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" id="historyTable">
-            <thead class="table-light">
-                <tr>
-                    <th>Patient Name</th>
-                    <th>Risk Output</th>
-                    <th>Cancer Type</th>
-                    <th>Stage & Marker</th>
-                    <th>Region</th>
-                    <th>Confidence</th>
-                    <th>Assessment Date</th>
-                    <th class="text-end">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in predictions %}
-                <tr data-risk="{{ p.prediction }}">
-                    <td>
-                        <div class="fw-bold text-dark">{{ p.patient_name }}</div>
-                        <div class="fs-8 text-muted">{{ p.age }}y / {{ p.gender }} | BMI: {{ p.bmi }}</div>
-                    </td>
-                    <td>
-                        {% if p.prediction|lower == 'yes' %}
-                        <span class="badge badge-risk-high"><i class="fas fa-triangle-exclamation me-1"></i> HIGH RISK</span>
-                        {% else %}
-                        <span class="badge badge-risk-low"><i class="fas fa-circle-check me-1"></i> LOW RISK</span>
-                        {% endif %}
-                    </td>
-                    <td><span class="badge bg-light text-dark border">{{ p.cancer_type }}</span></td>
-                    <td class="fs-7 text-muted">
-                        <div>{{ p.stage }}</div>
-                        <div class="badge bg-secondary-subtle text-secondary fs-8">{{ p.genetic_marker }}</div>
-                    </td>
-                    <td><span class="fs-7 text-muted">{{ p.hospital_region }}</span></td>
-                    <td>
-                        <div class="fw-bold">{{ p.confidence|floatformat:1 }}%</div>
-                        <div class="progress" style="height: 5px; width: 60px;">
-                            <div class="progress-bar {% if p.prediction|lower == 'yes' %}bg-danger{% else %}bg-success{% endif %}" style="width: {{ p.confidence }}%;"></div>
-                        </div>
-                    </td>
-                    <td class="text-muted fs-7">{{ p.created_at|date:"M d, Y" }}</td>
-                    <td class="text-end">
-                        <div class="btn-group">
-                            <a href="{% url 'report' p.pk %}" class="btn btn-outline-primary btn-sm rounded-circle me-1" title="View PDF Report">
-                                <i class="fas fa-file-pdf"></i>
-                            </a>
-                            <button type="button" class="btn btn-outline-danger btn-sm rounded-circle" data-bs-toggle="modal" data-bs-target="#deleteModal{{ p.pk }}" title="Delete Record">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+<!-- Navigation Tabs for Dual AI Modules -->
+<ul class="nav nav-pills nav-fill mb-4 p-2 glass-card rounded-4 gap-2" id="historyTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active py-3 rounded-3 fw-bold" id="risk-tab" data-bs-toggle="tab" data-bs-target="#riskTabContent" type="button" role="tab" aria-controls="riskTabContent" aria-selected="true">
+            <i class="fas fa-heart-pulse me-2 text-teal" style="color:#0d9488;"></i> Module 1: Risk Assessment History ({{ risk_assessments|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link py-3 rounded-3 fw-bold" id="survival-tab" data-bs-toggle="tab" data-bs-target="#survivalTabContent" type="button" role="tab" aria-controls="survivalTabContent" aria-selected="false">
+            <i class="fas fa-stethoscope me-2 text-primary"></i> Module 2: Survival Prediction History ({{ predictions|length }})
+        </button>
+    </li>
+</ul>
 
-                        <!-- Delete Confirmation Modal -->
-                        <div class="modal fade" id="deleteModal{{ p.pk }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-dialog-centered">
-                                <div class="modal-content glass-card border-0 shadow-lg text-start">
-                                    <div class="modal-header border-bottom">
-                                        <h5 class="modal-header-title text-danger fw-bold"><i class="fas fa-triangle-exclamation me-2"></i> Confirm Record Deletion</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body py-4">
-                                        <p class="mb-2">Are you sure you want to permanently delete the prediction record for <strong>{{ p.patient_name }}</strong>?</p>
-                                        <div class="p-3 bg-light rounded-3 fs-7 text-muted">
-                                            <div>Diagnostic Date: {{ p.created_at|date:"M d, Y H:i" }}</div>
-                                            <div>Prediction: {{ p.prediction }} ({{ p.confidence }}% Confidence)</div>
+<div class="tab-content" id="historyTabContent">
+    <!-- TAB 1: MODULE 1 RISK ASSESSMENT HISTORY -->
+    <div class="tab-pane fade show active" id="riskTabContent" role="tabpanel" aria-labelledby="risk-tab">
+        <div class="glass-card p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="riskHistoryTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Overall Risk Status</th>
+                            <th>Risk Score %</th>
+                            <th>Biometrics (BMI)</th>
+                            <th>Smoking Status</th>
+                            <th>Assessment Date</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in risk_assessments %}
+                        <tr data-risk="{{ r.overall_risk }}">
+                            <td>
+                                <div class="fw-bold text-dark">{{ r.patient_name }}</div>
+                                <div class="fs-8 text-muted">{{ r.age }}y / {{ r.gender }}</div>
+                            </td>
+                            <td>
+                                {% if r.overall_risk|lower == 'high' %}
+                                <span class="badge badge-risk-high"><i class="fas fa-triangle-exclamation me-1"></i> HIGH RISK</span>
+                                {% elif r.overall_risk|lower == 'medium' %}
+                                <span class="badge bg-warning text-dark border border-warning"><i class="fas fa-triangle-exclamation me-1"></i> MEDIUM RISK</span>
+                                {% else %}
+                                <span class="badge badge-risk-low"><i class="fas fa-circle-check me-1"></i> LOW RISK</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">{{ r.risk_percentage }}%</div>
+                                <div class="progress" style="height: 5px; width: 70px;">
+                                    <div class="progress-bar {% if r.overall_risk|lower == 'high' %}bg-danger{% elif r.overall_risk|lower == 'medium' %}bg-warning{% else %}bg-success{% endif %}" style="width: {{ r.risk_percentage }}%;"></div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fs-7 font-monospace fw-semibold">{{ r.bmi }} BMI</div>
+                                <div class="fs-8 text-muted">{{ r.height_cm }}cm / {{ r.weight_kg }}kg</div>
+                            </td>
+                            <td><span class="badge bg-light text-dark border fs-8">{{ r.smoking_status }}</span></td>
+                            <td class="text-muted fs-7">{{ r.created_at|date:"M d, Y" }}</td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <a href="{% url 'risk_report' r.pk %}" class="btn btn-outline-primary btn-sm rounded-circle me-1" title="View AI Risk Report">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-circle" data-bs-toggle="modal" data-bs-target="#deleteRiskModal{{ r.pk }}" title="Delete Record">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Delete Risk Modal -->
+                                <div class="modal fade" id="deleteRiskModal{{ r.pk }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content glass-card border-0 shadow-lg text-start">
+                                            <div class="modal-header border-bottom">
+                                                <h5 class="modal-header-title text-danger fw-bold"><i class="fas fa-triangle-exclamation me-2"></i> Confirm Record Deletion</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body py-4">
+                                                <p class="mb-2">Are you sure you want to permanently delete the risk assessment record for <strong>{{ r.patient_name }}</strong>?</p>
+                                            </div>
+                                            <div class="modal-footer border-top">
+                                                <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                                                <form method="post" action="{% url 'delete_risk_assessment' r.pk %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger rounded-pill fw-bold">
+                                                        <i class="fas fa-trash me-1"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="modal-footer border-top">
-                                        <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                                        <form method="post" action="{% url 'delete_prediction' p.pk %}">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-danger rounded-pill fw-bold">
-                                                <i class="fas fa-trash me-1"></i> Permanently Delete
-                                            </button>
-                                        </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-folder-open fs-1 mb-3 text-secondary"></i>
+                                    <h6>No pre-diagnosis risk assessment records found.</h6>
+                                    <a href="{% url 'risk_assessment' %}" class="btn btn-medical-primary btn-sm rounded-pill px-4 mt-2">
+                                        <i class="fas fa-heart-pulse me-1"></i> Start First Risk Assessment
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: MODULE 2 SURVIVAL PREDICTION HISTORY -->
+    <div class="tab-pane fade" id="survivalTabContent" role="tabpanel" aria-labelledby="survival-tab">
+        <div class="glass-card p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="historyTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Recurrence Outcome</th>
+                            <th>Cancer Type</th>
+                            <th>Stage & Marker</th>
+                            <th>Region</th>
+                            <th>Confidence</th>
+                            <th>Assessment Date</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in predictions %}
+                        <tr data-risk="{{ p.prediction }}">
+                            <td>
+                                <div class="fw-bold text-dark">{{ p.patient_name }}</div>
+                                <div class="fs-8 text-muted">{{ p.age }}y / {{ p.gender }} | BMI: {{ p.bmi }}</div>
+                            </td>
+                            <td>
+                                {% if p.prediction|lower == 'yes' %}
+                                <span class="badge badge-risk-high"><i class="fas fa-triangle-exclamation me-1"></i> RECURRENCE</span>
+                                {% else %}
+                                <span class="badge badge-risk-low"><i class="fas fa-circle-check me-1"></i> REMISSION</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-light text-dark border">{{ p.cancer_type }}</span></td>
+                            <td class="fs-7 text-muted">
+                                <div>{{ p.stage }}</div>
+                                <div class="badge bg-secondary-subtle text-secondary fs-8">{{ p.genetic_marker }}</div>
+                            </td>
+                            <td><span class="fs-7 text-muted">{{ p.hospital_region }}</span></td>
+                            <td>
+                                <div class="fw-bold">{{ p.confidence|floatformat:1 }}%</div>
+                                <div class="progress" style="height: 5px; width: 60px;">
+                                    <div class="progress-bar {% if p.prediction|lower == 'yes' %}bg-danger{% else %}bg-success{% endif %}" style="width: {{ p.confidence }}%;"></div>
+                                </div>
+                            </td>
+                            <td class="text-muted fs-7">{{ p.created_at|date:"M d, Y" }}</td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <a href="{% url 'report' p.pk %}" class="btn btn-outline-primary btn-sm rounded-circle me-1" title="View PDF Report">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-circle" data-bs-toggle="modal" data-bs-target="#deleteModal{{ p.pk }}" title="Delete Record">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Delete Confirmation Modal -->
+                                <div class="modal fade" id="deleteModal{{ p.pk }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content glass-card border-0 shadow-lg text-start">
+                                            <div class="modal-header border-bottom">
+                                                <h5 class="modal-header-title text-danger fw-bold"><i class="fas fa-triangle-exclamation me-2"></i> Confirm Record Deletion</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body py-4">
+                                                <p class="mb-2">Are you sure you want to permanently delete the prediction record for <strong>{{ p.patient_name }}</strong>?</p>
+                                            </div>
+                                            <div class="modal-footer border-top">
+                                                <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                                                <form method="post" action="{% url 'delete_prediction' p.pk %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger rounded-pill fw-bold">
+                                                        <i class="fas fa-trash me-1"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" class="text-center py-5">
-                        <div class="text-muted">
-                            <i class="fas fa-folder-open fs-1 mb-3 text-secondary"></i>
-                            <h6>No prediction history found.</h6>
-                            <p class="fs-7 mb-3">Predictions will automatically record here after running your first assessment.</p>
-                            <a href="{% url 'predict' %}" class="btn btn-medical-primary btn-sm rounded-pill px-4">
-                                <i class="fas fa-stethoscope me-1"></i> Start First Prediction
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-folder-open fs-1 mb-3 text-secondary"></i>
+                                    <h6>No survival prediction records found.</h6>
+                                    <a href="{% url 'predict' %}" class="btn btn-medical-primary btn-sm rounded-pill px-4 mt-2">
+                                        <i class="fas fa-stethoscope me-1"></i> Start First Prediction
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

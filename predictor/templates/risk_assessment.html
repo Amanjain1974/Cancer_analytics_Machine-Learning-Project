@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cancer Risk Assessment - CRIS AI Platform{% endblock %}
+
+{% block content %}
+<!-- Loading Scanner Overlay -->
+<div id="scannerOverlay" class="scanner-overlay d-none">
+    <div class="scanner-wave mb-4"></div>
+    <h4 class="fw-bold mb-2">Analyzing Pre-Diagnosis Clinical Parameters...</h4>
+    <p class="text-white-50 fs-6">Evaluating multi-variable lifestyle, genetic, and environmental factors...</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none"><i class="fas fa-house me-1"></i> Home</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Module 1: Cancer Risk Assessment</li>
+            </ol>
+        </nav>
+
+        <!-- Header Card -->
+        <div class="hero-gradient p-4 p-md-5 mb-4 text-white">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="bg-white text-teal rounded-3 d-flex align-items-center justify-content-center p-3" style="width: 54px; height: 54px; color:#0d9488;">
+                    <i class="fas fa-heart-pulse fs-3"></i>
+                </div>
+                <div>
+                    <span class="badge bg-white text-teal rounded-pill px-3 py-1 fw-bold fs-7 mb-1" style="color:#0d9488;">
+                        Module 1: Pre-Diagnosis Screening
+                    </span>
+                    <h2 class="fw-extrabold mb-0 text-white">Cancer Risk Assessment</h2>
+                </div>
+            </div>
+            <p class="lead mb-0 text-white-50 fs-6">
+                Estimate the probability that a healthy individual may develop cancer in the future. Please answer the pre-diagnosis questions below. All data remains confidential.
+            </p>
+        </div>
+
+        <!-- Form Card -->
+        <form method="post" id="riskForm" class="needs-validation" novalidate>
+            {% csrf_token %}
+
+            <!-- Category 1: Personal Demographics -->
+            <div class="glass-card p-4 p-md-5 mb-4">
+                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-4">
+                    <div class="bg-primary-subtle text-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:42px; height:42px;">
+                        <i class="fas fa-user fs-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">1. Personal & Biometric Information</h4>
+                        <span class="text-muted fs-7">Basic personal details and automatic body mass index calculation.</span>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label for="{{ form.patient_name.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-id-card text-primary me-1"></i> Patient Full Name
+                        </label>
+                        {{ form.patient_name }}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="{{ form.age.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-calendar text-primary me-1"></i> Age (Years)
+                        </label>
+                        {{ form.age }}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="{{ form.gender.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-venus-mars text-primary me-1"></i> Gender
+                        </label>
+                        {{ form.gender }}
+                    </div>
+
+                    <!-- Height & Weight with Auto-Calculated BMI -->
+                    <div class="col-md-4">
+                        <label for="{{ form.height_cm.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-ruler-vertical text-teal me-1" style="color:#0d9488;"></i> Height (cm)
+                        </label>
+                        {{ form.height_cm }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="{{ form.weight_kg.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-weight-scale text-teal me-1" style="color:#0d9488;"></i> Weight (kg)
+                        </label>
+                        {{ form.weight_kg }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-calculator text-success me-1"></i> Auto-Calculated BMI
+                        </label>
+                        <div class="p-2 border rounded bg-body-tertiary d-flex align-items-center justify-content-between">
+                            <span class="fs-5 fw-extrabold text-primary" id="bmiCalcDisplay">24.2</span>
+                            <span class="badge bg-success text-white" id="bmiCategoryBadge">Normal Weight</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="clinical-rationale-box mt-3">
+                    <i class="fas fa-circle-info text-primary me-1"></i>
+                    <strong>Clinical Rationale:</strong> Maintaining a healthy BMI (18.5 - 24.9) reduces chronic cellular inflammation and lowers risk for 13 types of cancer including colorectal, breast, and renal cancers.
+                </div>
+            </div>
+
+            <!-- Category 2: Lifestyle Factors -->
+            <div class="glass-card p-4 p-md-5 mb-4">
+                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-4">
+                    <div class="bg-teal-subtle text-teal rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:42px; height:42px; background:#ccfbf1; color:#0d9488;">
+                        <i class="fas fa-person-running fs-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">2. Lifestyle & Health Habits</h4>
+                        <span class="text-muted fs-7">Daily habits strongly associated with preventable cancer risks.</span>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <label for="{{ form.smoking_status.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-smoking text-danger me-1"></i> Smoking Status
+                        </label>
+                        {{ form.smoking_status }}
+                        <div class="clinical-rationale-box">
+                            "Smoking is the single strongest preventable risk factor for multiple cancers."
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="{{ form.alcohol_intake.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-wine-glass text-warning me-1"></i> Alcohol Consumption
+                        </label>
+                        {{ form.alcohol_intake }}
+                        <div class="clinical-rationale-box">
+                            Ethanol metabolism produces acetaldehyde, a known carcinogen affecting liver and esophageal tissue.
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="{{ form.tobacco_use.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-ban text-danger me-1"></i> Smokeless Tobacco
+                        </label>
+                        {{ form.tobacco_use }}
+                        <div class="clinical-rationale-box">
+                            Contains nitrosamines linked directly to oral and pancreatic cancers.
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="{{ form.physical_activity.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-dumbbell text-success me-1"></i> Physical Activity
+                        </label>
+                        {{ form.physical_activity }}
+                        <div class="clinical-rationale-box">
+                            Regular exercise regulates insulin sensitivity and hormone levels.
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="{{ form.diet_quality.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-apple-whole text-success me-1"></i> Diet Quality
+                        </label>
+                        {{ form.diet_quality }}
+                        <div class="clinical-rationale-box">
+                            High-fiber dietary patterns reduce gut transit time of dietary carcinogens.
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="{{ form.sleep_hours.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-moon text-info me-1"></i> Sleep (Hours)
+                        </label>
+                        {{ form.sleep_hours }}
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="{{ form.stress_level.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-brain text-secondary me-1"></i> Stress Level
+                        </label>
+                        {{ form.stress_level }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 3: Family History -->
+            <div class="glass-card p-4 p-md-5 mb-4">
+                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-4">
+                    <div class="bg-info-subtle text-info rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:42px; height:42px;">
+                        <i class="fas fa-people-roof fs-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">3. Family Cancer History</h4>
+                        <span class="text-muted fs-7">Inherited genetic predisposition and family medical records.</span>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <label for="{{ form.family_history.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-dna text-primary me-1"></i> Family History of Cancer
+                        </label>
+                        {{ form.family_history }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="{{ form.family_relative.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-person-breastfeeding text-primary me-1"></i> Which Relative?
+                        </label>
+                        {{ form.family_relative }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="{{ form.family_cancer_type.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-notes-medical text-primary me-1"></i> Cancer Type (Optional)
+                        </label>
+                        {{ form.family_cancer_type }}
+                    </div>
+                </div>
+
+                <div class="clinical-rationale-box mt-3">
+                    <i class="fas fa-circle-info text-primary me-1"></i>
+                    <strong>Clinical Rationale:</strong> "A family history may indicate inherited genetic variants (such as BRCA1/BRCA2 or Lynch syndrome mutations) that increase personal vulnerability."
+                </div>
+            </div>
+
+            <!-- Category 4: Medical History -->
+            <div class="glass-card p-4 p-md-5 mb-4">
+                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-4">
+                    <div class="bg-warning-subtle text-warning rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:42px; height:42px;">
+                        <i class="fas fa-hospital-user fs-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">4. Medical History & Conditions</h4>
+                        <span class="text-muted fs-7">Pre-existing metabolic conditions and prior benign conditions.</span>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.has_diabetes.id_for_label }}" class="form-label fw-bold">Diabetes Mellitus</label>
+                        {{ form.has_diabetes }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="{{ form.has_hypertension.id_for_label }}" class="form-label fw-bold">Hypertension</label>
+                        {{ form.has_hypertension }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="{{ form.is_obese.id_for_label }}" class="form-label fw-bold">Diagnosed Obesity</label>
+                        {{ form.is_obese }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="{{ form.previous_radiation.id_for_label }}" class="form-label fw-bold">Prior Radiation Therapy / X-Ray Exposure</label>
+                        {{ form.previous_radiation }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="{{ form.previous_benign_tumors.id_for_label }}" class="form-label fw-bold">History of Benign Tumors or Polyps</label>
+                        {{ form.previous_benign_tumors }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 5: Environmental & Occupational -->
+            <div class="glass-card p-4 p-md-5 mb-4">
+                <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-4">
+                    <div class="bg-danger-subtle text-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:42px; height:42px;">
+                        <i class="fas fa-industry fs-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">5. Environmental & Occupational Exposures</h4>
+                        <span class="text-muted fs-7">Exposure to airborne carcinogens, industrial chemicals, and UV radiation.</span>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-3">
+                        <label for="{{ form.pollution_exposure.id_for_label }}" class="form-label fw-bold">Air Pollution Exposure</label>
+                        {{ form.pollution_exposure }}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="{{ form.chemical_exposure.id_for_label }}" class="form-label fw-bold">Industrial Chemical Exposure</label>
+                        {{ form.chemical_exposure }}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="{{ form.uv_exposure.id_for_label }}" class="form-label fw-bold">Sun / UV Radiation Exposure</label>
+                        {{ form.uv_exposure }}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="{{ form.occupation_risk.id_for_label }}" class="form-label fw-bold">Hazardous Occupation</label>
+                        {{ form.occupation_risk }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Action Buttons -->
+            <div class="d-flex align-items-center justify-content-between mb-5">
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary px-4 py-3 rounded-pill fw-bold">
+                    <i class="fas fa-arrow-left me-1"></i> Cancel
+                </a>
+
+                <button type="submit" class="btn btn-medical-primary px-5 py-3 rounded-pill fs-6 fw-bold shadow hover-lift" onclick="showLoadingOverlay()">
+                    <i class="fas fa-microchip me-2"></i> Compute AI Risk Report
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

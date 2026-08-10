@@ -274,3 +274,81 @@ function exportHistoryCSV() {
   link.click();
   document.body.removeChild(link);
 }
+
+/* Real-time Height & Weight to BMI Calculator for Risk Assessment Module */
+document.addEventListener('DOMContentLoaded', () => {
+  initRiskAssessmentBMICalculator();
+  initCounterAnimation();
+});
+
+function initRiskAssessmentBMICalculator() {
+  const heightInput = document.getElementById('id_height_cm');
+  const weightInput = document.getElementById('id_weight_kg');
+  const bmiDisplay = document.getElementById('bmiCalcDisplay');
+  const bmiCategoryBadge = document.getElementById('bmiCategoryBadge');
+  const autoBmiValHidden = document.getElementById('id_bmi_auto_val');
+
+  if (!heightInput || !weightInput) return;
+
+  function calculate() {
+    const h = parseFloat(heightInput.value);
+    const w = parseFloat(weightInput.value);
+
+    if (h > 0 && w > 0) {
+      const heightM = h / 100;
+      const bmi = w / (heightM * heightM);
+      const roundedBMI = bmi.toFixed(1);
+
+      if (bmiDisplay) bmiDisplay.textContent = roundedBMI;
+      if (autoBmiValHidden) autoBmiValHidden.value = roundedBMI;
+
+      if (bmiCategoryBadge) {
+        if (bmi < 18.5) {
+          bmiCategoryBadge.className = 'badge bg-info text-white ms-2';
+          bmiCategoryBadge.textContent = 'Underweight';
+        } else if (bmi <= 24.9) {
+          bmiCategoryBadge.className = 'badge bg-success text-white ms-2';
+          bmiCategoryBadge.textContent = 'Normal Weight';
+        } else if (bmi <= 29.9) {
+          bmiCategoryBadge.className = 'badge bg-warning text-dark ms-2';
+          bmiCategoryBadge.textContent = 'Overweight';
+        } else {
+          bmiCategoryBadge.className = 'badge bg-danger text-white ms-2';
+          bmiCategoryBadge.textContent = 'Obese';
+        }
+      }
+    }
+  }
+
+  heightInput.addEventListener('input', calculate);
+  weightInput.addEventListener('input', calculate);
+  calculate();
+}
+
+/* Animated Counters */
+function initCounterAnimation() {
+  const counters = document.querySelectorAll('.counter-animate');
+  if (!counters.length) return;
+
+  counters.forEach((counter) => {
+    const target = parseFloat(counter.getAttribute('data-target') || counter.textContent);
+    if (isNaN(target)) return;
+
+    let start = 0;
+    const duration = 1200;
+    const stepTime = 20;
+    const steps = duration / stepTime;
+    const increment = target / steps;
+
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= target) {
+        counter.textContent = Number.isInteger(target) ? target : target.toFixed(1);
+        clearInterval(timer);
+      } else {
+        counter.textContent = Number.isInteger(target) ? Math.floor(start) : start.toFixed(1);
+      }
+    }, stepTime);
+  });
+}
+

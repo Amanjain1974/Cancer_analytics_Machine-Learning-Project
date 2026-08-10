@@ -4,34 +4,30 @@
 {% block title %}Cancer Risk Intelligence System - AI Healthcare Platform{% endblock %}
 
 {% block content %}
-<!-- Large Hero Section -->
+<!-- Large Hero Gateway Section -->
 <div class="hero-gradient p-5 mb-5 text-center text-md-start">
     <div class="row align-items-center g-5">
         <div class="col-lg-7">
             <span class="badge bg-white text-primary px-3 py-2 rounded-pill fw-bold mb-3 shadow-sm">
-                <i class="fas fa-sparkles me-1 text-warning"></i> Next-Gen Predictive Healthcare
+                <i class="fas fa-sparkles me-1 text-warning"></i> Enterprise Healthcare AI Intelligence
             </span>
             <h1 class="display-4 fw-extrabold mb-3 text-white">
                 Cancer Risk Intelligence System
             </h1>
             <p class="lead mb-4 text-white-50" style="font-size: 1.25rem;">
-                AI-powered Cancer Risk Prediction and Analytics Platform using advanced machine learning models for early risk detection and clinical decision support.
+                Dual-Module Clinical AI Platform. Screen healthy individuals for future cancer risk or evaluate post-diagnosis survival & recurrence prognosis with machine learning models.
             </p>
 
             <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-md-start">
-                <a href="{% url 'predict' %}" class="btn btn-light btn-lg px-4 py-3 rounded-pill fw-bold text-primary shadow hover-lift">
-                    <i class="fas fa-stethoscope me-2"></i> Start Prediction
+                <a href="{% url 'risk_assessment' %}" class="btn btn-light btn-lg px-4 py-3 rounded-pill fw-bold text-primary shadow hover-lift">
+                    <i class="fas fa-heart-pulse me-2 text-teal" style="color:#0d9488;"></i> Start Risk Assessment
+                </a>
+                <a href="{% url 'predict' %}" class="btn btn-outline-light btn-lg px-4 py-3 rounded-pill fw-bold hover-lift">
+                    <i class="fas fa-stethoscope me-2"></i> Survival Prediction
                 </a>
                 {% if not user.is_authenticated %}
-                <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg px-4 py-3 rounded-pill fw-bold hover-lift">
-                    <i class="fas fa-right-to-bracket me-2"></i> Login
-                </a>
                 <a href="{% url 'register' %}" class="btn bg-teal text-white btn-lg px-4 py-3 rounded-pill fw-bold shadow hover-lift" style="background:#0d9488;">
-                    <i class="fas fa-user-plus me-2"></i> Register
-                </a>
-                {% else %}
-                <a href="{% url 'dashboard' %}" class="btn btn-outline-light btn-lg px-4 py-3 rounded-pill fw-bold hover-lift">
-                    <i class="fas fa-chart-line me-2"></i> View Dashboard
+                    <i class="fas fa-user-plus me-2"></i> Get Started
                 </a>
                 {% endif %}
             </div>
@@ -40,38 +36,38 @@
         <div class="col-lg-5">
             <div class="glass-card p-4 text-dark shadow-lg border-0 bg-white bg-opacity-90">
                 <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-                    <div class="fw-bold text-primary"><i class="fas fa-shield-halved me-1"></i> Live Intelligence Panel</div>
-                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Active</span>
+                    <div class="fw-bold text-primary"><i class="fas fa-shield-halved me-1"></i> Live Intelligence Status</div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Dual Engine Active</span>
                 </div>
                 <div class="mb-3">
                     <div class="d-flex justify-content-between text-muted fs-7 mb-1">
-                        <span>Prediction Accuracy</span>
-                        <span class="fw-bold text-dark">94.8%</span>
+                        <span>Risk Assessment Model</span>
+                        <span class="fw-bold text-teal" style="color:#0d9488;">Clinical Rule Engine</span>
                     </div>
                     <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-success" style="width: 94.8%;"></div>
+                        <div class="progress-bar bg-teal" style="width: 100%; background:#0d9488;"></div>
                     </div>
                 </div>
                 <div class="mb-3">
                     <div class="d-flex justify-content-between text-muted fs-7 mb-1">
-                        <span>Model Confidence Score</span>
-                        <span class="fw-bold text-dark">High Precision</span>
+                        <span>Survival ML Model</span>
+                        <span class="fw-bold text-dark">Random Forest (Scikit-Learn)</span>
                     </div>
                     <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-primary" style="width: 91%;"></div>
+                        <div class="progress-bar bg-primary" style="width: 94.8%;"></div>
                     </div>
                 </div>
                 <div class="row g-2 text-center mt-2">
                     <div class="col-6">
                         <div class="p-2 rounded-3 bg-light">
-                            <div class="fs-4 fw-extrabold text-primary">10k+</div>
-                            <div class="fs-8 text-muted">Samples Trained</div>
+                            <div class="fs-4 fw-extrabold text-primary counter-animate" data-target="{{ total_system_predictions|default:125 }}">0</div>
+                            <div class="fs-8 text-muted">Evaluations Run</div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="p-2 rounded-3 bg-light">
                             <div class="fs-4 fw-extrabold text-teal" style="color:#0d9488;">Instant</div>
-                            <div class="fs-8 text-muted">AI Risk Report</div>
+                            <div class="fs-8 text-muted">AI Clinical Report</div>
                         </div>
                     </div>
                 </div>
@@ -80,12 +76,123 @@
     </div>
 </div>
 
+<!-- Section: Two Independent AI Modules Gateway Cards -->
+<section class="py-4 mb-5">
+    <div class="text-center mb-5">
+        <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-bold mb-2">Platform Selection</span>
+        <h2 class="fw-extrabold display-6">Select AI Module</h2>
+        <p class="text-muted col-md-8 mx-auto">Choose the appropriate clinical module depending on whether the individual has been diagnosed with cancer.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Card 1: Cancer Risk Assessment -->
+        <div class="col-lg-6">
+            <div class="gateway-card p-4 p-md-5 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="bg-teal-subtle text-teal rounded-4 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; background:#ccfbf1; color:#0d9488;">
+                            <i class="fas fa-heart-pulse fs-2"></i>
+                        </div>
+                        <span class="badge bg-teal-subtle text-teal border border-teal-subtle rounded-pill px-3 py-2" style="background:#ccfbf1; color:#0d9488;">
+                            <i class="fas fa-user-shield me-1"></i> Pre-Diagnosis Screening
+                        </span>
+                    </div>
+                    <h3 class="fw-extrabold mb-3">Cancer Risk Assessment</h3>
+                    <p class="text-muted mb-4 fs-6">
+                        Predict your future cancer risk using lifestyle habits, personal metrics, family history, and medical background. Designed specifically for healthy individuals seeking early prevention insight.
+                    </p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 text-muted fs-7">
+                                <i class="fas fa-check-circle text-teal" style="color:#0d9488;"></i> Auto-BMI Calculator
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 text-muted fs-7">
+                                <i class="fas fa-check-circle text-teal" style="color:#0d9488;"></i> Lifestyle Factors
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 text-muted fs-7">
+                                <i class="fas fa-check-circle text-teal" style="color:#0d9488;"></i> Family & Genetic Risk
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 text-muted fs-7">
+                                <i class="fas fa-check-circle text-teal" style="color:#0d9488;"></i> Environmental Exposure
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <a href="{% url 'risk_assessment' %}" class="btn btn-medical-primary w-100 py-3 rounded-3 fs-6 d-flex align-items-center justify-content-center gap-2">
+                        <span>Start Risk Assessment</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Cancer Survival Prediction -->
+        <div class="col-lg-6">
+            <div class="gateway-card p-4 p-md-5 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="bg-primary-subtle text-primary rounded-4 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                            <i class="fas fa-stethoscope fs-2"></i>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2">
+                            <i class="fas fa-notes-medical me-1"></i> Post-Diagnosis Clinical
+                        </span>
+                    </div>
+                    <h3 class="fw-extrabold mb-3">Cancer Survival Prediction</h3>
+                    <p class="text-muted mb-4 fs-6">
+                        Predict prognosis, survival timeline, and recurrence probability using clinical diagnostic data, tumor characteristics, and treatment response metrics.
+                    </p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 text-muted fs-7">
+                                <i class="fas fa-check-circle text-primary"></i> Cancer Type & Stage
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 text-muted fs-7">
+                                <i class="fas fa-check-circle text-primary"></i> Tumor Size (cm)
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 text-muted fs-7">
+                                <i class="fas fa-check-circle text-primary"></i> Treatment Response
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 text-muted fs-7">
+                                <i class="fas fa-check-circle text-primary"></i> Scikit-Learn Model
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <a href="{% url 'predict' %}" class="btn btn-medical-outline w-100 py-3 rounded-3 fs-6 d-flex align-items-center justify-content-center gap-2">
+                        <span>Start Survival Prediction</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Section: How It Works -->
 <section class="py-5 mb-5">
     <div class="text-center mb-5">
-        <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-bold mb-2">Step-by-Step</span>
-        <h2 class="fw-extrabold display-6">How It Works</h2>
-        <p class="text-muted col-md-8 mx-auto">Four simple steps to calculate patient risk probability and generate comprehensive medical recommendations.</p>
+        <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-bold mb-2">Clinical Workflow</span>
+        <h2 class="fw-extrabold display-6">How The AI Intelligence Works</h2>
+        <p class="text-muted col-md-8 mx-auto">Four simple steps to compute accurate risk probability and generate comprehensive clinical reports.</p>
     </div>
 
     <div class="row g-4">
@@ -94,8 +201,8 @@
                 <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:64px; height:64px;">
                     <i class="fas fa-user-pen fs-3"></i>
                 </div>
-                <h5 class="fw-bold mb-2">1. Input Details</h5>
-                <p class="text-muted fs-7">Enter patient demographics, BMI, smoking history, tumor metrics, and genetic markers.</p>
+                <h5 class="fw-bold mb-2">1. Input Data</h5>
+                <p class="text-muted fs-7">Provide lifestyle habits or clinical diagnostic parameters via guided forms.</p>
             </div>
         </div>
 
@@ -104,8 +211,8 @@
                 <div class="bg-teal-subtle text-teal rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:64px; height:64px; background:#ccfbf1; color:#0d9488;">
                     <i class="fas fa-microchip fs-3"></i>
                 </div>
-                <h5 class="fw-bold mb-2">2. AI Diagnostics</h5>
-                <p class="text-muted fs-7">Scikit-learn ML pipeline evaluates complex clinical feature combinations in real-time.</p>
+                <h5 class="fw-bold mb-2">2. AI Intelligence</h5>
+                <p class="text-muted fs-7">Scikit-learn pipeline or clinical risk engine processes feature combinations in real-time.</p>
             </div>
         </div>
 
@@ -114,8 +221,8 @@
                 <div class="bg-info-subtle text-info rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:64px; height:64px;">
                     <i class="fas fa-chart-pie fs-3"></i>
                 </div>
-                <h5 class="fw-bold mb-2">3. Risk Scoring</h5>
-                <p class="text-muted fs-7">Calculates precise probability score, confidence rating, and risk level category.</p>
+                <h5 class="fw-bold mb-2">3. Risk Stratification</h5>
+                <p class="text-muted fs-7">Calculates risk percentages, confidence ratings, and primary risk factor breakdowns.</p>
             </div>
         </div>
 
@@ -124,169 +231,8 @@
                 <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:64px; height:64px;">
                     <i class="fas fa-file-pdf fs-3"></i>
                 </div>
-                <h5 class="fw-bold mb-2">4. Clinical Report</h5>
-                <p class="text-muted fs-7">Generate printable PDF reports with actionable oncology recommendations for patient care.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Section: Our AI Technology -->
-<section class="py-5 mb-5 bg-body-tertiary rounded-4 p-4 p-md-5">
-    <div class="row align-items-center g-5">
-        <div class="col-lg-6">
-            <span class="badge bg-teal-subtle text-teal px-3 py-2 rounded-pill fw-bold mb-2" style="background:#ccfbf1; color:#0d9488;">Machine Learning Engine</span>
-            <h2 class="fw-extrabold display-6 mb-3">Our AI Technology</h2>
-            <p class="text-muted mb-4">
-                Powered by a trained Scikit-learn Pipeline incorporating multi-variable risk models trained on standardized oncology clinical datasets.
-            </p>
-            
-            <div class="d-flex align-items-start gap-3 mb-3">
-                <div class="bg-primary text-white rounded-3 p-2 mt-1"><i class="fas fa-diagram-project fs-5"></i></div>
-                <div>
-                    <h6 class="fw-bold mb-1">Supervised Learning Architecture</h6>
-                    <p class="text-muted fs-7 mb-0">Feature transformations, one-hot encoding, and scaling optimized for clinical accuracy.</p>
-                </div>
-            </div>
-
-            <div class="d-flex align-items-start gap-3 mb-3">
-                <div class="bg-teal text-white rounded-3 p-2 mt-1" style="background:#0d9488;"><i class="fas fa-bullseye fs-5"></i></div>
-                <div>
-                    <h6 class="fw-bold mb-1">Probability & Confidence Metrics</h6>
-                    <p class="text-muted fs-7 mb-0">Outputs calibrated decision probability along with ensemble model confidence percentage.</p>
-                </div>
-            </div>
-
-            <div class="d-flex align-items-start gap-3">
-                <div class="bg-info text-white rounded-3 p-2 mt-1"><i class="fas fa-dna fs-5"></i></div>
-                <div>
-                    <h6 class="fw-bold mb-1">Genetic & Clinical Feature Integration</h6>
-                    <p class="text-muted fs-7 mb-0">Analyzes BRCA1, KRAS, EGFR genetic markers, tumor size, and survival months simultaneously.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-6">
-            <div class="glass-card p-4">
-                <h5 class="fw-bold mb-4 border-bottom pb-2"><i class="fas fa-sliders text-primary me-2"></i> Model Feature Weights</h5>
-                
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between text-muted fs-7 mb-1">
-                        <span>Genetic Markers & Tumor Metrics</span>
-                        <span class="fw-bold">35% Weight</span>
-                    </div>
-                    <div class="progress" style="height: 10px;">
-                        <div class="progress-bar bg-primary" style="width: 35%;"></div>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between text-muted fs-7 mb-1">
-                        <span>Treatment Response & Stage</span>
-                        <span class="fw-bold">28% Weight</span>
-                    </div>
-                    <div class="progress" style="height: 10px;">
-                        <div class="progress-bar bg-teal" style="width: 28%; background:#0d9488;"></div>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between text-muted fs-7 mb-1">
-                        <span>Demographics & Family History</span>
-                        <span class="fw-bold">22% Weight</span>
-                    </div>
-                    <div class="progress" style="height: 10px;">
-                        <div class="progress-bar bg-info" style="width: 22%;"></div>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="d-flex justify-content-between text-muted fs-7 mb-1">
-                        <span>Lifestyle & BMI</span>
-                        <span class="fw-bold">15% Weight</span>
-                    </div>
-                    <div class="progress" style="height: 10px;">
-                        <div class="progress-bar bg-warning" style="width: 15%;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Section: Features -->
-<section class="py-5 mb-5">
-    <div class="text-center mb-5">
-        <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-bold mb-2">Capabilities</span>
-        <h2 class="fw-extrabold display-6">Platform Features</h2>
-        <p class="text-muted col-md-8 mx-auto">Designed for healthcare professionals, clinical researchers, and data analytics.</p>
-    </div>
-
-    <div class="row g-4">
-        <div class="col-md-4">
-            <div class="glass-card p-4 h-100 hover-lift">
-                <i class="fas fa-gauge-high fs-1 text-primary mb-3"></i>
-                <h5 class="fw-bold mb-2">Instant Prediction</h5>
-                <p class="text-muted fs-7">Submit multi-factor patient data and receive instant risk predictions with probability metrics.</p>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="glass-card p-4 h-100 hover-lift">
-                <i class="fas fa-chart-line fs-1 text-teal mb-3" style="color:#0d9488;"></i>
-                <h5 class="fw-bold mb-2">Analytics Dashboard</h5>
-                <p class="text-muted fs-7">Visualize risk distribution, prediction trends, and confidence statistics using Chart.js.</p>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="glass-card p-4 h-100 hover-lift">
-                <i class="fas fa-clock-rotate-left fs-1 text-info mb-3"></i>
-                <h5 class="fw-bold mb-2">History & Tracking</h5>
-                <p class="text-muted fs-7">Maintain encrypted history logs of all patient predictions with search and CSV export functionality.</p>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="glass-card p-4 h-100 hover-lift">
-                <i class="fas fa-file-pdf fs-1 text-danger mb-3"></i>
-                <h5 class="fw-bold mb-2">PDF Report Export</h5>
-                <p class="text-muted fs-7">Generate formatted medical report PDFs complete with recommendations and patient summary.</p>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="glass-card p-4 h-100 hover-lift">
-                <i class="fas fa-moon fs-1 text-warning mb-3"></i>
-                <h5 class="fw-bold mb-2">Dark Mode Support</h5>
-                <p class="text-muted fs-7">Toggle between crisp light theme and low-eyestrain dark mode tailored for medical monitors.</p>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="glass-card p-4 h-100 hover-lift">
-                <i class="fas fa-shield-halved fs-1 text-success mb-3"></i>
-                <h5 class="fw-bold mb-2">Secure & Private</h5>
-                <p class="text-muted fs-7">Django authentication and per-user database isolation keep all patient data strictly confidential.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Section: Benefits -->
-<section class="py-5 mb-5">
-    <div class="glass-card p-5 hero-gradient text-white border-0">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <h3 class="fw-extrabold mb-3 text-white">Empower Your Clinical Workflow Today</h3>
-                <p class="lead mb-0 text-white-50">
-                    Join healthcare teams leveraging AI risk intelligence for faster triage, decision support, and risk stratification.
-                </p>
-            </div>
-            <div class="col-lg-4 text-center text-lg-end mt-4 mt-lg-0">
-                <a href="{% url 'predict' %}" class="btn btn-light btn-lg rounded-pill fw-bold text-primary shadow hover-lift px-4">
-                    Get Started Now <i class="fas fa-arrow-right ms-2"></i>
-                </a>
+                <h5 class="fw-bold mb-2">4. AI Clinical Report</h5>
+                <p class="text-muted fs-7">Generates printable PDF reports complete with preventive advice and oncology recommendations.</p>
             </div>
         </div>
     </div>

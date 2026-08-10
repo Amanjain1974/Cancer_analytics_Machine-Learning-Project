@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cancer Risk Assessment Report - {{ record.patient_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+
+        <!-- Action Bar / Non-Printable Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4 btn-no-print">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none"><i class="fas fa-house me-1"></i> Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'risk_assessment' %}" class="text-decoration-none">Risk Assessment</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">AI Report #{{ record.id }}</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex align-items-center gap-2">
+                <button onclick="window.print()" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                    <i class="fas fa-print me-1"></i> Print / Export PDF
+                </button>
+                <a href="{% url 'risk_assessment' %}" class="btn btn-medical-primary rounded-pill px-4 fw-bold">
+                    <i class="fas fa-plus me-1"></i> New Assessment
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Report Card -->
+        <div class="glass-card p-4 p-md-5 mb-4 position-relative">
+
+            <!-- Report Header -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between border-bottom pb-4 mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary text-white rounded-4 d-flex align-items-center justify-content-center p-3" style="width: 60px; height: 60px;">
+                        <i class="fas fa-shield-virus fs-2"></i>
+                    </div>
+                    <div>
+                        <div class="text-uppercase tracking-wider fs-8 text-muted fw-bold">Cancer Risk Intelligence System</div>
+                        <h2 class="fw-extrabold mb-0">Professional AI Risk Report</h2>
+                    </div>
+                </div>
+
+                <div class="text-end mt-3 mt-md-0">
+                    <div class="fs-7 text-muted">Assessment ID: <strong class="text-dark">#RISK-{{ record.id }}</strong></div>
+                    <div class="fs-7 text-muted">Date: <strong>{{ record.created_at|date:"F d, Y - H:i" }}</strong></div>
+                </div>
+            </div>
+
+            <!-- Risk Result Spotlight Gauge -->
+            <div class="row g-4 align-items-center bg-body-tertiary rounded-4 p-4 mb-5 border">
+                <div class="col-md-5 text-center border-end-md">
+                    <div class="gauge-container mb-3" style="--gauge-pct: {{ record.risk_percentage }}; --gauge-color: {% if record.overall_risk == 'High' %}#f43f5e{% elif record.overall_risk == 'Medium' %}#f59e0b{% else %}#10b981{% endif %};">
+                        <div class="gauge-circle">
+                            <div class="gauge-inner">
+                                <span class="display-6 fw-extrabold text-dark counter-animate" data-target="{{ record.risk_percentage }}">0</span>
+                                <span class="fs-7 text-muted fw-semibold">Risk %</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        {% if record.overall_risk == 'High' %}
+                            <span class="badge badge-risk-high fs-6 px-4 py-2">
+                                <i class="fas fa-triangle-exclamation me-1"></i> HIGH RISK STRATUM
+                            </span>
+                        {% elif record.overall_risk == 'Medium' %}
+                            <span class="badge bg-warning text-dark fs-6 px-4 py-2 border border-warning">
+                                <i class="fas fa-triangle-exclamation me-1"></i> MEDIUM RISK STRATUM
+                            </span>
+                        {% else %}
+                            <span class="badge badge-risk-low fs-6 px-4 py-2">
+                                <i class="fas fa-circle-check me-1"></i> LOW RISK STRATUM
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-7 ps-md-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h4 class="fw-bold mb-0">Risk Evaluation Summary</h4>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">
+                            <i class="fas fa-bullseye me-1"></i> {{ record.confidence }}% AI Confidence
+                        </span>
+                    </div>
+
+                    <p class="text-muted mb-3">
+                        Based on the pre-diagnosis health metrics, lifestyle indicators, and environmental exposure reported for <strong>{{ record.patient_name }}</strong>, the overall estimated 10-year future cancer risk probability is <strong>{{ record.risk_percentage }}%</strong>.
+                    </p>
+
+                    <div class="row g-2 text-center">
+                        <div class="col-4">
+                            <div class="p-2 rounded-3 bg-white border">
+                                <div class="fs-7 text-muted">BMI Rating</div>
+                                <div class="fw-bold text-dark">{{ record.bmi }}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 rounded-3 bg-white border">
+                                <div class="fs-7 text-muted">Smoking</div>
+                                <div class="fw-bold text-dark">{{ record.smoking_status }}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 rounded-3 bg-white border">
+                                <div class="fs-7 text-muted">Family Hist.</div>
+                                <div class="fw-bold text-dark">{{ record.family_history }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patient Biometric Profile -->
+            <div class="mb-5">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">
+                    <i class="fas fa-user-doctor text-primary me-2"></i> Patient Biometric Profile
+                </h5>
+
+                <div class="row g-3">
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 border rounded-3 bg-body-tertiary">
+                            <div class="fs-7 text-muted">Full Name</div>
+                            <div class="fw-bold text-dark fs-6">{{ record.patient_name }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 border rounded-3 bg-body-tertiary">
+                            <div class="fs-7 text-muted">Age / Gender</div>
+                            <div class="fw-bold text-dark fs-6">{{ record.age }} yrs / {{ record.gender }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 border rounded-3 bg-body-tertiary">
+                            <div class="fs-7 text-muted">Height / Weight</div>
+                            <div class="fw-bold text-dark fs-6">{{ record.height_cm }} cm / {{ record.weight_kg }} kg</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="p-3 border rounded-3 bg-body-tertiary">
+                            <div class="fs-7 text-muted">Calculated BMI</div>
+                            <div class="fw-bold text-teal fs-6" style="color:#0d9488;">{{ record.bmi }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Primary Risk Factor Breakdown -->
+            <div class="mb-5">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">
+                    <i class="fas fa-list-check text-danger me-2"></i> Primary Contributing Risk Factors
+                </h5>
+
+                <div class="row g-3">
+                    {% for factor in top_factors_list %}
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center gap-3 p-3 border rounded-3 bg-white shadow-sm">
+                            <div class="bg-danger-subtle text-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                <i class="fas fa-triangle-exclamation"></i>
+                            </div>
+                            <div class="fw-bold text-dark fs-6">{{ factor }}</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <div class="p-3 border rounded-3 bg-success-subtle text-success">
+                            <i class="fas fa-circle-check me-2"></i> No significant elevated risk factors detected in this profile.
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Personalized Preventive & Clinical Recommendations -->
+            <div class="mb-4">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">
+                    <i class="fas fa-stethoscope text-teal me-2" style="color:#0d9488;"></i> Personalized Clinical & Lifestyle Recommendations
+                </h5>
+
+                <div class="p-4 border rounded-4 bg-teal-subtle text-dark" style="background: rgba(13, 148, 136, 0.05); border-color: rgba(13, 148, 136, 0.2) !important;">
+                    <ul class="mb-0 ps-3">
+                        {% for rec in recommendations_list %}
+                        <li class="mb-2 fs-6 leading-relaxed">
+                            {{ rec }}
+                        </li>
+                        {% empty %}
+                        <li class="fs-6">Maintain current healthy lifestyle and schedule regular preventive wellness exams.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Disclaimer Footer -->
+            <div class="border-top pt-3 text-muted fs-8">
+                <i class="fas fa-shield-halved me-1 text-primary"></i>
+                <strong>Medical Disclaimer:</strong> This AI report is generated for preventive screening and educational purposes. It does not constitute a formal diagnostic pathology or oncology evaluation. Please consult a licensed medical professional for personal clinical guidance.
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

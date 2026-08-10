@@ -49,10 +49,39 @@
                             <i class="fas fa-chart-line me-1"></i> Dashboard
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'predict' %}active{% endif %}" href="{% url 'predict' %}">
-                            <i class="fas fa-stethoscope me-1"></i> Start Prediction
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name in 'risk_assessment,predict' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-brain-circuit me-1"></i> AI Modules
                         </a>
+                        <ul class="dropdown-menu glass-card shadow-lg p-2">
+                            <li>
+                                <a class="dropdown-item rounded-2 py-2" href="{% url 'risk_assessment' %}">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="bg-teal text-white rounded-2 p-2" style="background:#0d9488;">
+                                            <i class="fas fa-heart-pulse"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold fs-7">Module 1: Cancer Risk Assessment</div>
+                                            <div class="fs-8 text-muted">Pre-Diagnosis Lifestyle & Risk</div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item rounded-2 py-2" href="{% url 'predict' %}">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="bg-primary text-white rounded-2 p-2">
+                                            <i class="fas fa-stethoscope"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold fs-7">Module 2: Cancer Survival Prediction</div>
+                                            <div class="fs-8 text-muted">Post-Diagnosis Clinical Prognosis</div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}" href="{% url 'analytics' %}">
