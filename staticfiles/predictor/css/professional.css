@@ -1,0 +1,5 @@
+
+body{background:#eef2f7;}
+.stat-card{border:none;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,.08);}
+.list-group-item{border-radius:8px!important;margin-bottom:8px;}
+.card-header{font-weight:bold;}

@@ -1,0 +1,380 @@
+/* Cancer Risk Intelligence System - Medical AI Design System */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --primary-color: #0284c7;
+  --primary-hover: #0369a1;
+  --primary-light: #e0f2fe;
+  --teal-color: #0d9488;
+  --teal-light: #ccfbf1;
+  --accent-color: #3b82f6;
+  
+  --bg-gradient: linear-gradient(135deg, #f0f9ff 0%, #f8fafc 50%, #e0f2fe 100%);
+  --bg-body: #f8fafc;
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --card-border: rgba(226, 232, 240, 0.8);
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --shadow-sm: 0 2px 4px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 8px 24px -4px rgba(2, 132, 199, 0.12);
+  --shadow-lg: 0 20px 40px -12px rgba(15, 23, 42, 0.15);
+
+  --risk-high-bg: #ffe4e6;
+  --risk-high-text: #e11d48;
+  --risk-high-border: #f43f5e;
+  
+  --risk-med-bg: #fef3c7;
+  --risk-med-text: #d97706;
+  --risk-med-border: #f59e0b;
+
+  --risk-low-bg: #dcfce7;
+  --risk-low-text: #16a34a;
+  --risk-low-border: #22c55e;
+}
+
+[data-bs-theme="dark"] {
+  --primary-color: #38bdf8;
+  --primary-hover: #0284c7;
+  --primary-light: #1e3a8a;
+  --teal-color: #2dd4bf;
+  --teal-light: #134e4a;
+  
+  --bg-gradient: linear-gradient(135deg, #0b1329 0%, #0f172a 50%, #1e293b 100%);
+  --bg-body: #0b1329;
+  --card-bg: rgba(30, 41, 59, 0.95);
+  --card-border: rgba(51, 65, 85, 0.8);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 40px -12px rgba(0, 0, 0, 0.6);
+
+  --risk-high-bg: #4c0519;
+  --risk-high-text: #fb7185;
+
+  --risk-low-bg: #052e16;
+  --risk-low-text: #4ade80;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-body);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+main {
+  flex: 1;
+}
+
+/* Glassmorphism Card System */
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-md);
+  transition: box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.hover-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Medical Hero Section */
+.hero-gradient {
+  background: linear-gradient(135deg, #0284c7 0%, #0d9488 50%, #0369a1 100%);
+  color: #ffffff;
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 50px -10px rgba(2, 132, 199, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-gradient::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Sticky Glass Navbar */
+.navbar-glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--card-border);
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.3s ease;
+}
+
+[data-bs-theme="dark"] .navbar-glass {
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.navbar-brand {
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--primary-color) !important;
+}
+
+.nav-link {
+  font-weight: 600;
+  color: var(--text-main);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem !important;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover, .nav-link.active {
+  color: var(--primary-color) !important;
+  background: var(--primary-light);
+}
+
+/* Custom Buttons */
+.btn-medical-primary {
+  background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
+  color: #ffffff;
+  border: none;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+  transition: all 0.25s ease;
+}
+
+.btn-medical-primary:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #0f766e 100%);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5);
+}
+
+.btn-medical-outline {
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  transition: all 0.25s ease;
+}
+
+.btn-medical-outline:hover {
+  background: var(--primary-color);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+/* Form Wizard Section Container (Full Width Block) */
+.wizard-section {
+  display: block;
+  width: 100%;
+  position: relative;
+}
+
+.wizard-section.d-none {
+  display: none !important;
+}
+
+/* Multi-step Form Wizard Circular Step Indicators */
+.wizard-steps {
+  display: flex;
+  justify-content: space-around;
+  position: relative;
+  margin-bottom: 2.2rem;
+}
+
+.wizard-steps::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  left: 10%;
+  right: 10%;
+  height: 3px;
+  background: var(--card-border);
+  z-index: 1;
+}
+
+.wizard-step {
+  position: relative;
+  z-index: 2;
+  background: var(--card-bg);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+  margin: 0 auto;
+}
+
+.wizard-step.active {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.wizard-step.completed {
+  border-color: var(--teal-color);
+  background: var(--teal-color);
+  color: #ffffff;
+}
+
+.wizard-label {
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.wizard-step.active + .wizard-label {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+/* Input Icon Group */
+.input-group-text {
+  background: var(--primary-light);
+  border-color: var(--card-border);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.form-control, .form-select {
+  border-color: var(--card-border);
+  background-color: var(--card-bg);
+  color: var(--text-main);
+  border-radius: 0.6rem;
+  padding: 0.65rem 1rem;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+  background-color: var(--card-bg);
+  color: var(--text-main);
+}
+
+/* Risk Cards & Badges */
+.badge-risk-high {
+  background: var(--risk-high-bg);
+  color: var(--risk-high-text);
+  border: 1px solid var(--risk-high-border);
+  font-weight: 700;
+  padding: 0.5em 1em;
+  border-radius: 2rem;
+  animation: pulse-red 2s infinite;
+}
+
+.badge-risk-low {
+  background: var(--risk-low-bg);
+  color: var(--risk-low-text);
+  border: 1px solid var(--risk-low-border);
+  font-weight: 700;
+  padding: 0.5em 1em;
+  border-radius: 2rem;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
+
+/* AI Scanner Modal Loading Overlay */
+.scanner-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+/* Back to Top Button */
+.back-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  border: none;
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.back-to-top:hover {
+  background: var(--primary-hover);
+  transform: translateY(-4px);
+  color: #ffffff;
+}
+
+/* Toast Container */
+.toast-container {
+  position: fixed;
+  top: 5rem;
+  right: 1.5rem;
+  z-index: 1090;
+}
+
+/* Print CSS */
+@media print {
+  .navbar-glass, footer, .btn-no-print, .back-to-top {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .glass-card {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
+}
