@@ -10,8 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN python manage.py collectstatic --noinput
+RUN chmod +x build.sh start.sh
+RUN python manage.py collectstatic --noinput --clear || true
 
 EXPOSE 8000
 
-CMD ["gunicorn", "cancer_ai.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["/bin/bash", "start.sh"]

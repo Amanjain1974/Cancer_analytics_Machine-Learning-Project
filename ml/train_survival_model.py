@@ -132,9 +132,9 @@ def generate_survival_dataset(num_samples: int = 5000) -> pd.DataFrame:
             s_val -= (tumor_size_cm[i] - 5.0) * 3.0
         score_arr[i] = s_val
 
-    noise = np.random.normal(0, 5.0, size=num_samples)
-    final_score = np.clip(score_arr + noise, 0, 150)
-    survival_prob = 1.0 / (1.0 + np.exp(-(final_score - 45.0) / 16.0))
+    noise = np.random.normal(0, 8.0, size=num_samples)
+    final_score = np.clip(score_arr + noise, 10, 140)
+    survival_prob = 1.0 / (1.0 + np.exp(-(final_score - 45.0) / 22.0))
     survival_label = (survival_prob >= 0.50).astype(int)
 
     df = pd.DataFrame({

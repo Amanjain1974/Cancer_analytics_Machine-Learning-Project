@@ -199,9 +199,9 @@ def generate_epidemiological_dataset(num_samples: int = 6000) -> pd.DataFrame:
     risk_scores -= np.where(fruits_intake == "High", 6.0, 0.0)
 
     # Normalize probability & add slight noise
-    noise = np.random.normal(0, 4.0, size=num_samples)
-    final_score = np.clip(risk_scores + noise, 0, 180)
-    cancer_risk_prob = 1.0 / (1.0 + np.exp(-(final_score - 65.0) / 18.0))
+    noise = np.random.normal(0, 8.0, size=num_samples)
+    final_score = np.clip(risk_scores + noise, 10, 160)
+    cancer_risk_prob = 1.0 / (1.0 + np.exp(-(final_score - 65.0) / 24.0))
     cancer_risk_label = (cancer_risk_prob >= 0.45).astype(int)
 
     df = pd.DataFrame({

@@ -32,7 +32,11 @@ def get_survival_model():
 
 
 def home(request):
-    total_system_predictions = PredictionHistory.objects.count()
+    try:
+        total_system_predictions = PredictionHistory.objects.count()
+    except Exception:
+        total_system_predictions = 0
+
     return render(request, "home.html", {
         "total_system_predictions": total_system_predictions
     })

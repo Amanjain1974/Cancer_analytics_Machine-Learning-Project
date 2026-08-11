@@ -84,22 +84,28 @@ def evaluate_survival_prognosis(data: dict) -> dict:
 
     input_df = pd.DataFrame([row])
 
-    survival_prob_val = 0.75
+    rule_prob = calculate_rule_based_survival(row)
     confidence = 95.0
 
     if model_data and "calibrated" in model_data:
         try:
             calibrated_model = model_data["calibrated"]
-            survival_prob_val = float(calibrated_model.predict_proba(input_df)[0][1])
+            ml_prob = float(calibrated_model.predict_proba(input_df)[0][1])
+            if ml_prob < 0.05 or ml_prob > 0.95:
+                survival_prob_val = 0.45 * ml_prob + 0.55 * rule_prob
+            else:
+                survival_prob_val = 0.65 * ml_prob + 0.35 * rule_prob
+
             confidence = round(92.0 + abs(survival_prob_val - 0.5) * 11.0, 1)
             confidence = min(98.5, max(88.0, confidence))
         except Exception as e:
             print(f"Survival prediction fallback: {e}")
-            survival_prob_val = calculate_rule_based_survival(row)
+            survival_prob_val = rule_prob
     else:
-        survival_prob_val = calculate_rule_based_survival(row)
+        survival_prob_val = rule_prob
 
-    survival_pct = round(survival_prob_val * 100.0, 1)
+    # Ensure survival_pct is bounded between 6.0% and 94.0%
+    survival_pct = round(min(94.0, max(6.0, survival_prob_val * 100.0)), 1)
 
     # Estimate survival months based on survival probability, stage, age, and response
     base_months = int(round(12.0 + (survival_prob_val * 60.0)))
@@ -156,18 +162,51 @@ def evaluate_survival_prognosis(data: dict) -> dict:
 
 
 def calculate_rule_based_survival(row: dict) -> float:
-    s = 0.65
-    if row.get("stage") == "Stage I":
-        s += 0.20
-    elif row.get("stage") == "Stage IV":
-        s -= 0.35
-    if row.get("treatment_response") == "Excellent":
-        s += 0.15
-    elif row.get("treatment_response") in ["No Response", "Disease Progression"]:
-        s -= 0.25
+    stage = row.get("stage", "Stage II")
+    if stage == "Stage I":
+        s = 0.84
+    elif stage == "Stage II":
+        s = 0.70
+    elif stage == "Stage III":
+        s = 0.48
+    else:  # Stage IV
+        s = 0.22
+
+    tr = row.get("treatment_response", "Good")
+    if tr == "Excellent":
+        s += 0.14
+    elif tr == "Good":
+        s += 0.08
+    elif tr == "Stable":
+        s += 0.02
+    elif tr == "Partial Response":
+        s -= 0.06
+    elif tr == "No Response":
+        s -= 0.16
+    elif tr == "Disease Progression":
+        s -= 0.24
+
     if row.get("metastasis") == "Yes":
-        s -= 0.20
-    return min(0.96, max(0.05, s))
+        s -= 0.18
+    if row.get("lymph_nodes") == "Yes":
+        s -= 0.08
+
+    tsize = float(row.get("tumor_size_cm", 3.0))
+    if tsize > 6.0:
+        s -= 0.10
+    elif tsize > 3.0:
+        s -= 0.04
+
+    age = float(row.get("age", 45))
+    if age > 65:
+        s -= 0.06
+
+    if row.get("has_heart_disease") == "Yes" or row.get("has_kidney_disease") == "Yes":
+        s -= 0.06
+    if row.get("smoking_status") == "Current":
+        s -= 0.08
+
+    return min(0.94, max(0.06, s))
 
 
 def compute_survival_drivers(row: dict, survival_pct: float) -> tuple:

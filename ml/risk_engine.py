@@ -147,28 +147,33 @@ def evaluate_patient_risk(data: dict) -> dict:
     input_df = pd.DataFrame([row])
 
     # Predict using ML pipeline if available, else epidemiological calculation
-    prob = 0.25
+    rule_prob = calculate_rule_based_prob(row)
     confidence = 94.0
 
     if model_data and "calibrated" in model_data:
         try:
             calibrated_model = model_data["calibrated"]
-            prob = float(calibrated_model.predict_proba(input_df)[0][1])
-            # Model confidence score (91% - 98%)
+            ml_prob = float(calibrated_model.predict_proba(input_df)[0][1])
+            if ml_prob < 0.05 or ml_prob > 0.95:
+                prob = 0.50 * ml_prob + 0.50 * rule_prob
+            else:
+                prob = 0.70 * ml_prob + 0.30 * rule_prob
+
             confidence = round(92.0 + abs(prob - 0.5) * 11.5, 1)
             confidence = min(98.5, max(88.0, confidence))
         except Exception as e:
             print(f"Prediction fallback: {e}")
-            prob = calculate_rule_based_prob(row)
+            prob = rule_prob
     else:
-        prob = calculate_rule_based_prob(row)
+        prob = rule_prob
 
-    risk_percentage = round(prob * 100.0, 1)
+    # Ensure risk percentage is non-zero (bounded between 4.5% and 95.0%)
+    risk_percentage = round(min(95.0, max(4.5, prob * 100.0)), 1)
 
     # Risk level classification
-    if risk_percentage >= 60.0:
+    if risk_percentage >= 55.0:
         overall_risk = "High"
-    elif risk_percentage >= 28.0:
+    elif risk_percentage >= 25.0:
         overall_risk = "Medium"
     else:
         overall_risk = "Low"
@@ -220,20 +225,87 @@ def evaluate_patient_risk(data: dict) -> dict:
 
 
 def calculate_rule_based_prob(row: dict) -> float:
-    score = 15.0
-    if row.get("age", 40) > 55:
-        score += 15.0
-    if row.get("smoking_status") in ["Daily", "Occasionally"]:
-        score += 25.0
+    # Baseline risk starting score from age and demographics
+    age = float(row.get("age", 40))
+    score = 6.0 + (age / 100.0) * 12.0
+
+    # Family history & genetic factors
     if row.get("family_history") == "Yes":
-        score += 20.0
-    if row.get("bmi", 22) >= 30:
+        aff_cnt = int(row.get("family_affected_count", 1))
+        score += 15.0 + (aff_cnt * 4.0)
+    if row.get("genetic_disorders") == "Yes":
+        score += 14.0
+
+    # Smoking & Tobacco
+    smk = row.get("smoking_status", "Never")
+    if smk == "Daily":
+        score += 24.0 + min(12.0, int(row.get("cigarettes_per_day", 0)) * 0.5)
+    elif smk == "Occasionally":
+        score += 14.0
+    elif smk == "Former":
+        score += 8.0
+
+    if row.get("tobacco_chewing") == "Yes":
+        score += 12.0
+
+    # Alcohol
+    alc = row.get("alcohol_intake", "Never")
+    if alc == "Daily":
+        score += 12.0
+    elif alc == "Weekly":
+        score += 6.0
+
+    # BMI & Obesity
+    bmi = float(row.get("bmi", 22.5))
+    if bmi >= 30.0 or row.get("obesity") == "Yes":
+        score += 12.0
+    elif bmi >= 25.0:
+        score += 6.0
+
+    # Pre-existing conditions
+    if row.get("previous_tumors") == "Yes":
         score += 15.0
-    if row.get("radiation_exposure") in ["High", "Moderate"]:
+    if row.get("chronic_inflammation") == "Yes":
+        score += 10.0
+    if row.get("diabetes") == "Yes":
+        score += 5.0
+    if row.get("hypertension") == "Yes":
+        score += 4.0
+
+    # Environmental exposures
+    if row.get("radiation_exposure") == "High":
         score += 15.0
+    elif row.get("radiation_exposure") == "Moderate":
+        score += 8.0
+
+    if row.get("chemical_exposure") == "High" or row.get("asbestos_exposure") == "High":
+        score += 12.0
+    elif row.get("chemical_exposure") == "Moderate" or row.get("asbestos_exposure") == "Moderate":
+        score += 6.0
+
+    if row.get("uv_exposure") == "High":
+        score += 8.0
+    if row.get("air_pollution") == "High":
+        score += 6.0
+
+    # Active clinical symptoms
     active_symptoms = sum(1 for k, v in row.items() if k.startswith("symptom_") and v == "Yes")
-    score += active_symptoms * 6.0
-    return min(0.96, max(0.04, score / 100.0))
+    score += min(32.0, active_symptoms * 6.5)
+
+    # Protective lifestyle factors
+    ex = row.get("exercise_frequency", "")
+    if ex == "Daily":
+        score -= 8.0
+    elif ex == "3-4 times/week":
+        score -= 5.0
+
+    if row.get("vegetables_intake") == "High":
+        score -= 4.0
+    if row.get("fruits_intake") == "High":
+        score -= 3.0
+
+    # Convert score to probability scale (bounded between 0.045 and 0.945)
+    return min(0.945, max(0.045, score / 100.0))
 
 
 def compute_feature_contributions(row: dict, risk_percentage: float) -> list:
