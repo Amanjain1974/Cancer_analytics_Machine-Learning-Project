@@ -260,8 +260,9 @@ def dashboard(request):
 def analytics(request):
     """Detailed analytics for both AI modules."""
     qs = PredictionHistory.objects.filter(user=request.user)
+    total = qs.count()
 
-    risk_qs = qs.filter(cancer_type__icontains="Pre-Diagnosis") | qs.filter(stage="N/A")
+    risk_qs = qs.filter(Q(cancer_type__icontains="Pre-Diagnosis") | Q(stage="N/A"))
     survival_qs = qs.exclude(stage="N/A").exclude(cancer_type__icontains="Pre-Diagnosis")
 
     total_risk = risk_qs.count()
@@ -271,19 +272,57 @@ def analytics(request):
     med_risk = risk_qs.filter(prediction__iexact="Medium").count()
     low_risk = risk_qs.filter(prediction__iexact="Low").count()
 
-    # Cancer Type Breakdown for Survival Module
-    by_cancer = list(survival_qs.values("cancer_type").annotate(count=Count("id")).order_by("-count"))
-    by_stage = list(survival_qs.values("stage").annotate(count=Count("id")))
+    # Age Groups (<30, 30-45, 46-60, >60)
+    age_under_30 = qs.filter(age__lt=30).count()
+    age_30_45 = qs.filter(age__gte=30, age__lte=45).count()
+    age_46_60 = qs.filter(age__gte=46, age__lte=60).count()
+    age_over_60 = qs.filter(age__gt=60).count()
+
+    # Smoking vs Risk Score
+    smk_types = ["Never", "Former", "Occasionally", "Daily"]
+    smoking_risk_vals = []
+    for st in smk_types:
+        avg_val = risk_qs.filter(smoking_status__iexact=st).aggregate(avg=Avg("probability"))["avg"]
+        pct = round((avg_val or 0.0) * 100.0, 1) if (avg_val is not None and avg_val <= 1.0) else round(avg_val or 0.0, 1)
+        smoking_risk_vals.append(pct)
+
+    # BMI vs Risk Score
+    bmi_normal = risk_qs.filter(bmi__lt=25.0).aggregate(avg=Avg("probability"))["avg"]
+    bmi_overweight = risk_qs.filter(bmi__gte=25.0, bmi__lt=30.0).aggregate(avg=Avg("probability"))["avg"]
+    bmi_obese = risk_qs.filter(bmi__gte=30.0).aggregate(avg=Avg("probability"))["avg"]
+
+    def to_pct(val):
+        if val is None:
+            return 0.0
+        return round(val * 100.0, 1) if val <= 1.0 else round(val, 1)
+
+    bmi_risk_vals = [to_pct(bmi_normal), to_pct(bmi_overweight), to_pct(bmi_obese)]
+
+    # Model Confidence Distribution
+    conf_high = qs.filter(confidence__gte=94.0).count()
+    conf_med = qs.filter(confidence__gte=90.0, confidence__lt=94.0).count()
+    conf_std = qs.filter(confidence__lt=90.0).count()
+
+    # Assessment Timeline Trend
+    recent_trend = list(qs.order_by("created_at")[:10])
+    trend_dates = [r.created_at.strftime("%d %b") for r in recent_trend]
+    trend_vals = [round(r.probability * 100.0, 1) if r.probability <= 1.0 else round(r.probability, 1) for r in recent_trend]
 
     return render(request, "analytics.html", {
+        "total": total,
         "total_risk": total_risk,
         "total_survival": total_survival,
         "high_risk": high_risk,
         "med_risk": med_risk,
         "low_risk": low_risk,
         "risk_dist_json": json.dumps([high_risk, med_risk, low_risk]),
-        "by_cancer_json": json.dumps(by_cancer),
-        "by_stage_json": json.dumps(by_stage),
+        "age_dist_json": json.dumps([age_under_30, age_30_45, age_46_60, age_over_60]),
+        "smoking_labels_json": json.dumps(smk_types),
+        "smoking_risk_json": json.dumps(smoking_risk_vals),
+        "bmi_risk_json": json.dumps(bmi_risk_vals),
+        "conf_dist_json": json.dumps([conf_high, conf_med, conf_std]),
+        "trend_dates_json": json.dumps(trend_dates),
+        "trend_vals_json": json.dumps(trend_vals),
     })
 
 
@@ -341,22 +380,11 @@ def report_view(request, pk):
 
     is_survival = (record.stage != "N/A" and "Pre-Diagnosis" not in record.cancer_type)
 
-    if is_survival:
-        return render(request, "survival_result.html", {
-            "record": record,
-            "survival_probability": prob_pct,
-            "estimated_survival_months": record.survival_months,
-            "confidence": record.confidence,
-            "prognosis_category": record.prediction,
-            "predicted_outcome": record.future_risk,
-            "positive_factors": record.get_top_factors(),
-            "negative_factors": [],
-            "recommendations": record.get_recommendations(),
-        })
-
     return render(request, "report.html", {
         "record": record,
+        "prob_pct": prob_pct,
         "risk_pct": prob_pct,
+        "is_survival": is_survival,
         "top_factors": record.get_top_factors(),
         "recommendations": record.get_recommendations(),
         "symptoms": record.get_symptoms(),

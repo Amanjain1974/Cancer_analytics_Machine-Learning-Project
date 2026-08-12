@@ -39,8 +39,13 @@
                 <div class="d-flex align-items-center gap-3">
                     <img src="{% static 'img/favicon.png' %}" alt="CRIS Logo" style="width: 54px; height: 54px; object-fit: contain;">
                     <div>
+                        {% if is_survival %}
+                        <h3 class="fw-bold text-dark mb-0">CANCER SURVIVAL PROGNOSIS REPORT</h3>
+                        <small class="text-muted">Clinical Decision Support AI & Post-Diagnosis Survival Prognosis</small>
+                        {% else %}
                         <h3 class="fw-bold text-dark mb-0">CANCER RISK ASSESSMENT REPORT</h3>
                         <small class="text-muted">Clinical Decision Support AI & Epidemiological Risk Intelligence</small>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="text-sm-end">
@@ -51,7 +56,7 @@
 
             <!-- Patient Information Grid -->
             <div class="bg-body-tertiary rounded-3 p-4 mb-4 border">
-                <h6 class="fw-bold text-uppercase text-secondary fs-7 mb-3"><i class="fas fa-id-card me-2"></i> Patient Demographic Profile</h6>
+                <h6 class="fw-bold text-uppercase text-secondary fs-7 mb-3"><i class="fas fa-id-card me-2"></i> Patient Demographic & Clinical Profile</h6>
                 <div class="row g-3">
                     <div class="col-sm-6 col-md-3">
                         <span class="text-muted fs-7 d-block">Patient Name:</span>
@@ -69,11 +74,64 @@
                         <span class="text-muted fs-7 d-block">Body Mass Index:</span>
                         <span class="fw-bold text-dark fs-6">{{ record.bmi }} (BMI)</span>
                     </div>
+
+                    {% if is_survival %}
+                    <div class="col-sm-6 col-md-3 mt-3">
+                        <span class="text-muted fs-7 d-block">Diagnosed Cancer Type:</span>
+                        <span class="fw-bold text-teal fs-6" style="color:#0d9488;">{{ record.cancer_type }}</span>
+                    </div>
+                    <div class="col-sm-6 col-md-3 mt-3">
+                        <span class="text-muted fs-7 d-block">Cancer Stage:</span>
+                        <span class="fw-bold text-dark fs-6">{{ record.stage }}</span>
+                    </div>
+                    <div class="col-sm-6 col-md-3 mt-3">
+                        <span class="text-muted fs-7 d-block">Treatment Type:</span>
+                        <span class="fw-bold text-dark fs-6">{{ record.treatment_type }}</span>
+                    </div>
+                    <div class="col-sm-6 col-md-3 mt-3">
+                        <span class="text-muted fs-7 d-block">Treatment Response:</span>
+                        <span class="fw-bold text-dark fs-6">{{ record.treatment_response }}</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- AI Risk Evaluation Results Banner -->
+            <!-- AI Evaluation Results Banner -->
             <div class="row g-3 mb-4">
+                {% if is_survival %}
+                <div class="col-md-4">
+                    <div class="p-4 rounded-3 border text-center {% if record.prediction == 'Excellent' or record.prediction == 'Good' %}bg-success-subtle border-success-subtle{% elif record.prediction == 'Moderate' %}bg-warning-subtle border-warning-subtle{% else %}bg-danger-subtle border-danger-subtle{% endif %}">
+                        <span class="text-uppercase fw-bold fs-7 d-block mb-1">Overall Survival Probability</span>
+                        <div class="fs-1 fw-extrabold {% if record.prediction == 'Excellent' or record.prediction == 'Good' %}text-success{% elif record.prediction == 'Moderate' %}text-warning-emphasis{% else %}text-danger{% endif %}">
+                            {{ prob_pct }}%
+                        </div>
+                        <span class="badge {% if record.prediction == 'Excellent' or record.prediction == 'Good' %}bg-success{% elif record.prediction == 'Moderate' %}bg-warning text-dark{% else %}bg-danger{% endif %} rounded-pill px-3 py-1 fs-7 fw-bold mt-1">
+                            {{ record.prediction|upper }} PROGNOSIS
+                        </span>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="p-4 rounded-3 border text-center bg-body-tertiary">
+                        <span class="text-uppercase fw-bold fs-7 text-muted d-block mb-1">Estimated Survival Duration</span>
+                        <div class="fs-1 fw-extrabold text-teal" style="color:#0d9488;">
+                            {{ record.survival_months }} <span class="fs-6 text-muted fw-normal">Months</span>
+                        </div>
+                        <small class="text-muted">Prognostic Timeline Estimate</small>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="p-4 rounded-3 border text-center bg-body-tertiary">
+                        <span class="text-uppercase fw-bold fs-7 text-muted d-block mb-1">Model Confidence</span>
+                        <div class="fs-1 fw-extrabold text-primary">
+                            {{ record.confidence }}%
+                        </div>
+                        <small class="text-muted">Survival Classifier Calibration</small>
+                    </div>
+                </div>
+
+                {% else %}
                 <div class="col-md-4">
                     <div class="p-4 rounded-3 border text-center {% if record.prediction == 'High' %}bg-danger-subtle border-danger-subtle{% elif record.prediction == 'Medium' %}bg-warning-subtle border-warning-subtle{% else %}bg-success-subtle border-success-subtle{% endif %}">
                         <span class="text-uppercase fw-bold fs-7 d-block mb-1">Calculated Cancer Risk</span>
@@ -105,34 +163,69 @@
                         <small class="text-muted">Ensemble Pipeline Calibration</small>
                     </div>
                 </div>
+                {% endif %}
             </div>
 
-            <!-- Future Risk Projection Alert -->
+            <!-- Future Risk / Outcome Summary Alert -->
             <div class="p-3 bg-light border-start border-4 border-primary rounded-3 mb-4">
+                {% if is_survival %}
+                <h6 class="fw-bold text-primary mb-1"><i class="fas fa-notes-medical me-1"></i> Predicted Clinical Outcome Summary</h6>
+                <p class="mb-0 text-dark fs-7">{{ record.future_risk }}</p>
+                {% else %}
                 <h6 class="fw-bold text-primary mb-1"><i class="fas fa-clock-rotate-left me-1"></i> Long-Term Risk Projection</h6>
                 <p class="mb-0 text-dark fs-7">{{ record.future_risk }}</p>
+                {% if record.risk_reduction_estimate > 0 %}
                 <div class="mt-2 text-success fw-bold fs-7">
                     <i class="fas fa-arrow-trend-down me-1"></i> Estimated Risk Reduction Potential: {{ record.risk_reduction_estimate }}%
                 </div>
+                {% endif %}
+                {% endif %}
             </div>
 
-            <!-- Risk Factor Breakdown & Symptoms -->
+            <!-- Risk / Survival Driver Breakdown -->
             <div class="row g-4 mb-4">
                 <div class="col-md-6">
+                    {% if is_survival %}
+                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-chart-line text-teal me-2" style="color:#0d9488;"></i> Key Survival Factors</h6>
+                    {% else %}
                     <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-chart-bar text-primary me-2"></i> Key Risk Driver Breakdown</h6>
+                    {% endif %}
                     <ul class="list-group list-group-flush">
                         {% for factor in top_factors %}
                         <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 fs-7">
                             <span class="fw-semibold text-dark"><i class="fas fa-caret-right text-primary me-1"></i> {{ factor.factor }}</span>
-                            <span class="badge bg-danger-subtle text-danger fw-bold">{{ factor.contribution }}</span>
+                            <span class="badge {% if is_survival %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} fw-bold">
+                                {% if factor.contribution %}{{ factor.contribution }}{% else %}{{ factor.impact }}{% endif %}
+                            </span>
                         </li>
                         {% empty %}
-                        <li class="list-group-item bg-transparent px-0 py-2 fs-7 text-muted">Baseline age and demographic metrics.</li>
+                        <li class="list-group-item bg-transparent px-0 py-2 fs-7 text-muted">Baseline clinical parameters.</li>
                         {% endfor %}
                     </ul>
                 </div>
 
                 <div class="col-md-6">
+                    {% if is_survival %}
+                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-microscope text-primary me-2"></i> Clinical Biomarkers & History</h6>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 fs-7">
+                            <span class="text-muted">Genetic Marker:</span>
+                            <span class="fw-bold text-dark">{{ record.genetic_marker }}</span>
+                        </li>
+                        <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 fs-7">
+                            <span class="text-muted">Tumor Size:</span>
+                            <span class="fw-bold text-dark">{{ record.tumor_size }} cm</span>
+                        </li>
+                        <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 fs-7">
+                            <span class="text-muted">Hospital Region:</span>
+                            <span class="fw-bold text-dark">{{ record.hospital_region }}</span>
+                        </li>
+                        <li class="list-group-item bg-transparent d-flex justify-content-between px-0 py-2 fs-7">
+                            <span class="text-muted">Smoking History:</span>
+                            <span class="fw-bold text-dark">{{ record.smoking_status }}</span>
+                        </li>
+                    </ul>
+                    {% else %}
                     <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-notes-medical text-teal me-2" style="color:#0d9488;"></i> Reported Symptoms</h6>
                     <div class="d-flex flex-wrap gap-2">
                         {% for symptom in symptoms %}
@@ -145,12 +238,13 @@
                         </span>
                         {% endfor %}
                     </div>
+                    {% endif %}
                 </div>
             </div>
 
             <!-- Medical Recommendations Section -->
             <div class="mb-4">
-                <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-clipboard-check text-success me-2"></i> Clinical & Lifestyle Recommendations</h6>
+                <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-clipboard-check text-success me-2"></i> Clinical & Treatment Recommendations</h6>
                 <div class="row g-2">
                     {% for rec in recommendations %}
                     <div class="col-12">
@@ -160,7 +254,7 @@
                     </div>
                     {% empty %}
                     <div class="col-12">
-                        <div class="p-3 bg-light rounded-3 text-muted fs-7">Maintain regular health checkups and wellness habits.</div>
+                        <div class="p-3 bg-light rounded-3 text-muted fs-7">Maintain regular health checkups and oncology follow-ups.</div>
                     </div>
                     {% endfor %}
                 </div>
@@ -171,7 +265,7 @@
                 <div>
                     <div class="fw-bold fs-7 text-dark">Cancer Risk Intelligence System (CRIS AI)</div>
                     <p class="text-muted fs-8 mb-0" style="max-width: 550px;">
-                        <strong>Medical Disclaimer:</strong> This AI risk evaluation is for educational and early screening reference only. It does not replace formal clinical diagnosis or physician evaluation.
+                        <strong>Medical Disclaimer:</strong> This AI report is for clinical decision support reference only. It does not replace formal oncology evaluation or primary diagnostic care.
                     </p>
                 </div>
                 <div class="text-center text-sm-end">
