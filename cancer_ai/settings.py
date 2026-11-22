@@ -78,9 +78,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "cancer_ai.wsgi.application"
 
+# Database Configuration (supports DATABASE_URL or individual DB_* parameters, falls back to SQLite)
+db_url = os.environ.get("DATABASE_URL")
+if not db_url and os.environ.get("DB_HOST"):
+    db_user = os.environ.get("DB_USER", "postgres")
+    db_pass = os.environ.get("DB_PASSWORD", "")
+    db_host = os.environ.get("DB_HOST", "localhost")
+    db_port = os.environ.get("DB_PORT", "5432")
+    db_name = os.environ.get("DB_NAME", "insforge")
+    db_ssl = os.environ.get("DB_SSLMODE", "require")
+    db_url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}?sslmode={db_ssl}"
+
 DATABASES = {
     "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        default=db_url or f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600,
         conn_health_checks=True,
     )
